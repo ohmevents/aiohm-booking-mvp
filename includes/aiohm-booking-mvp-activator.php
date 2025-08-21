@@ -12,9 +12,6 @@ class AIOHM_BOOKING_MVP_Activator {
         $charset = $wpdb->get_charset_collate();
         $order = $wpdb->prefix.'aiohm_booking_mvp_order';
         $item  = $wpdb->prefix.'aiohm_booking_mvp_item';
-        
-        // Handle database schema updates
-        self::maybe_update_database_schema();
 
         $sql1 = "CREATE TABLE {$order} (
             id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -64,6 +61,9 @@ class AIOHM_BOOKING_MVP_Activator {
 
         dbDelta($sql1);
         dbDelta($sql2);
+
+        // Handle database schema updates after tables are created
+        self::maybe_update_database_schema();
 
         self::register_cpt();
         self::create_default_settings();
@@ -178,6 +178,14 @@ class AIOHM_BOOKING_MVP_Activator {
     private static function maybe_update_database_schema() {
         global $wpdb;
         $order_table = $wpdb->prefix . 'aiohm_booking_mvp_order';
+        
+        // Check if the table exists before attempting schema updates
+        // Safe SQL: Table name sanitized via wpdb->prefix concatenation  
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        $table_exists = $wpdb->get_var("SHOW TABLES LIKE '{$order_table}'");
+        if (!$table_exists) {
+            return; // Table doesn't exist yet, skip schema updates
+        }
         
         // Check if buyer_age column exists, if not add it
         // Safe SQL: Table name sanitized via wpdb->prefix concatenation
