@@ -1,0 +1,1545 @@
+# Copyright (C) 2025 OHM Events Agency
+# This file is distributed under the GPLv2 or later.
+msgid ""
+msgstr ""
+"Project-Id-Version: AIOHM Booking MVP 1.0.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/aiohm-booking-mvp\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2025-08-21T01:55:53+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: aiohm-booking-mvp\n"
+
+#. Plugin Name of the plugin
+#: aiohm-booking-mvp.php
+msgid "AIOHM Booking MVP"
+msgstr ""
+
+#. Plugin URI of the plugin
+#: aiohm-booking-mvp.php
+msgid "https://wordpress.org/plugins/aiohm-booking-mvp/"
+msgstr ""
+
+#. Description of the plugin
+#: aiohm-booking-mvp.php
+msgid "Transform your WordPress into a seamless accommodation booking experience. Focuses exclusively on room and accommodation bookings with deposits, payments, and full customization. Built with AIOHM's signature attention to conscious business flow."
+msgstr ""
+
+#. Author of the plugin
+#: aiohm-booking-mvp.php
+msgid "OHM Events Agency"
+msgstr ""
+
+#. Author URI of the plugin
+#: aiohm-booking-mvp.php
+msgid "https://www.ohm.events"
+msgstr ""
+
+#: aiohm-booking-mvp.php:122
+msgid "Settings"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-activator.php:82
+msgid "Events"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-activator.php:83
+msgid "Event"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:437
+#: includes/aiohm-booking-mvp-admin.php:1029
+msgid "You do not have sufficient permissions to access this page."
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:790
+msgid "Applying changes..."
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:791
+msgid "Saving settings and updating menu..."
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:792
+msgid "Please enter an API key first."
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:793
+msgid "Testing..."
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:794
+msgid "Testing connection..."
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:795
+msgid "Connection test failed. Please try again."
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:796
+msgid "Saving..."
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:797
+msgid "Save failed. Please try again."
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:798
+msgid "Failed to set default provider. Please try again."
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:799
+msgid "Error: Invalid accommodation index"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:800
+msgid "Saved!"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:801
+msgid "Error: "
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:802
+msgid "Please enter a question about your booking database"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:803
+msgid "..."
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:804
+msgid "AI Query Error: "
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:805
+msgid "Unknown error"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:806
+msgid "Connection error while processing your query. Please try again."
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:807
+msgid "No response to copy"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:808
+msgid "Copied!"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:809
+msgid "Response copied to clipboard!"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:810
+msgid "No response received"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:811
+msgid "Please enter a question about your orders"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:813
+msgid "Cell is not editable. Check if you are logged in as admin."
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:814
+msgid "This date has an active booking and cannot be modified."
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:815
+msgid "Error updating status. Please try again."
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:816
+msgid "Error saving settings. Please try again."
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:817
+msgid "Connection Error"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:818
+#: includes/aiohm-booking-mvp-calendar.php:1307
+msgid "Free/Available"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:818
+#: includes/aiohm-booking-mvp-calendar.php:1214
+#: templates/aiohm-booking-mvp-widget.php:292
+msgid "Available"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:819
+#: includes/aiohm-booking-mvp-calendar.php:1308
+msgid "Booked"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:819
+#: includes/aiohm-booking-mvp-admin.php:1288
+#: includes/aiohm-booking-mvp-calendar.php:1309
+msgid "Pending"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:820
+#: includes/aiohm-booking-mvp-calendar.php:1310
+msgid "External"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:820
+#: includes/aiohm-booking-mvp-calendar.php:1311
+msgid "Blocked"
+msgstr ""
+
+#. translators: %1$s is the room number, %2$s is the date
+#: includes/aiohm-booking-mvp-admin.php:822
+#, php-format
+msgid "Room %1$s - %2$s"
+msgstr ""
+
+#. translators: %1$s is the room number, %2$s is the date
+#: includes/aiohm-booking-mvp-admin.php:822
+msgid "⚠️ This date has an active booking"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:823
+msgid "Clear Status"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:823
+msgid "Set Status:"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:824
+msgid "Choose status"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:824
+msgid "Custom Price (optional)"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:825
+msgid "Default"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:825
+msgid "Reason/Notes (optional)"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:826
+msgid "Previously blocked"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:826
+msgid "Update Status"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:827
+msgid "Updating..."
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:827
+msgid "Error processing response."
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:828
+msgid "(carry-over)"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:828
+msgid "Filtering..."
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:829
+msgid "Resetting..."
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:829
+msgid "Showing all dates"
+msgstr ""
+
+#. translators: %1$d is the number of dates found, %2$s is the status type
+#: includes/aiohm-booking-mvp-admin.php:831
+#, php-format
+msgid "Found %1$d dates with %2$s status"
+msgstr ""
+
+#. translators: %1$d is the number of dates found, %2$s is the status type
+#: includes/aiohm-booking-mvp-admin.php:831
+msgid "Syncing..."
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:832
+msgid "Synced Successfully"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:832
+msgid "Sync Failed"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:833
+msgid "Click to modify this date status"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:859
+msgid "Debug information collected successfully!"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:860
+msgid "Error collecting debug information: "
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:861
+msgid ""
+"=== AIOHM Booking System Test Results ===\n"
+"\n"
+""
+msgstr ""
+
+#. translators: %s is the system test status (success/failure)
+#: includes/aiohm-booking-mvp-admin.php:863
+#, php-format
+msgid ""
+"Status: %s\n"
+""
+msgstr ""
+
+#. translators: %s is the system test message or error details
+#: includes/aiohm-booking-mvp-admin.php:865
+#, php-format
+msgid ""
+"Message: %s\n"
+"\n"
+""
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:866
+msgid "Booking system tests completed!"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:867
+msgid "Error testing booking system: "
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:868
+msgid "Server error while testing booking system"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:869
+msgid "No debug information to copy"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:870
+msgid "Debug information copied to clipboard!"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:871
+msgid "No debug information to download"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:872
+msgid "Debug file downloaded successfully!"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:873
+msgid "Feature request"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:874
+msgid "Support request"
+msgstr ""
+
+#. translators: %s is the request type (feature request or support request)
+#: includes/aiohm-booking-mvp-admin.php:876
+#, php-format
+msgid "%s submitted successfully! We'll get back to you soon."
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:877
+msgid "Error submitting request: "
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:878
+msgid "Server error while submitting request"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:879
+msgid "Failed to collect plugin debug information"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:880
+msgid ""
+"=== AIOHM Booking MVP Debug Information ===\n"
+""
+msgstr ""
+
+#. translators: %s is the date and time when debug info was generated
+#: includes/aiohm-booking-mvp-admin.php:882
+#, php-format
+msgid ""
+"Generated: %s\n"
+"\n"
+""
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:883
+msgid ""
+"=== System Information ===\n"
+""
+msgstr ""
+
+#. translators: %s is the plugin version number
+#: includes/aiohm-booking-mvp-admin.php:885
+#, php-format
+msgid ""
+"Plugin Version: %s\n"
+""
+msgstr ""
+
+#. translators: %s is the WordPress version number
+#: includes/aiohm-booking-mvp-admin.php:887
+#, php-format
+msgid ""
+"WordPress Version: %s\n"
+""
+msgstr ""
+
+#. translators: %s is the PHP version number
+#: includes/aiohm-booking-mvp-admin.php:889
+#, php-format
+msgid ""
+"PHP Version: %s\n"
+""
+msgstr ""
+
+#. translators: %s is the site URL
+#: includes/aiohm-booking-mvp-admin.php:891
+#, php-format
+msgid ""
+"Site URL: %s\n"
+""
+msgstr ""
+
+#. translators: %s is the list of enabled plugin modules
+#: includes/aiohm-booking-mvp-admin.php:893
+#, php-format
+msgid ""
+"Enabled Modules: %s\n"
+"\n"
+""
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:894
+msgid ""
+"=== Browser Information ===\n"
+""
+msgstr ""
+
+#. translators: %s is the browser user agent string
+#: includes/aiohm-booking-mvp-admin.php:896
+#, php-format
+msgid ""
+"User Agent: %s\n"
+""
+msgstr ""
+
+#. translators: %s is the browser language
+#: includes/aiohm-booking-mvp-admin.php:898
+#, php-format
+msgid ""
+"Language: %s\n"
+""
+msgstr ""
+
+#. translators: %s is the operating system platform
+#: includes/aiohm-booking-mvp-admin.php:900
+#, php-format
+msgid ""
+"Platform: %s\n"
+""
+msgstr ""
+
+#. translators: %s is yes/no for cookie support
+#: includes/aiohm-booking-mvp-admin.php:902
+#, php-format
+msgid ""
+"Cookies Enabled: %s\n"
+""
+msgstr ""
+
+#. translators: %s is yes/no for online status
+#: includes/aiohm-booking-mvp-admin.php:904
+#, php-format
+msgid ""
+"Online: %s\n"
+"\n"
+""
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:905
+msgid ""
+"=== Display Information ===\n"
+""
+msgstr ""
+
+#. translators: %1$s is screen width, %2$s is screen height
+#: includes/aiohm-booking-mvp-admin.php:907
+#, php-format
+msgid ""
+"Screen: %1$sx%2$s\n"
+""
+msgstr ""
+
+#. translators: %1$s is window width, %2$s is window height
+#: includes/aiohm-booking-mvp-admin.php:909
+#, php-format
+msgid ""
+"Window: %1$sx%2$s\n"
+""
+msgstr ""
+
+#. translators: %s is the device pixel ratio number
+#: includes/aiohm-booking-mvp-admin.php:911
+#, php-format
+msgid ""
+"Device Pixel Ratio: %s\n"
+""
+msgstr ""
+
+#. translators: %s is the color depth value
+#: includes/aiohm-booking-mvp-admin.php:913
+#, php-format
+msgid ""
+"Color Depth: %s\n"
+"\n"
+""
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:914
+msgid ""
+"=== WordPress Information ===\n"
+""
+msgstr ""
+
+#. translators: %s is the WordPress admin URL
+#: includes/aiohm-booking-mvp-admin.php:916
+#, php-format
+msgid ""
+"Admin URL: %s\n"
+""
+msgstr ""
+
+#. translators: %s is the current page URL
+#: includes/aiohm-booking-mvp-admin.php:918
+#, php-format
+msgid ""
+"Current Page: %s\n"
+""
+msgstr ""
+
+#. translators: %s is the referring page URL
+#: includes/aiohm-booking-mvp-admin.php:920
+#, php-format
+msgid ""
+"Referrer: %s\n"
+"\n"
+""
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:921
+msgid ""
+"=== Plugin Information ===\n"
+""
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:921
+msgid ""
+"Settings:\n"
+""
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:922
+msgid "[CONFIGURED]"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:922
+msgid "[NOT SET]"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:923
+msgid ""
+"Database Tables:\n"
+""
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:923
+msgid "EXISTS"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:924
+msgid "MISSING"
+msgstr ""
+
+#. translators: %d is the number of database table rows
+#: includes/aiohm-booking-mvp-admin.php:926
+#, php-format
+msgid "%d rows"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:927
+msgid ""
+"Booking System Status:\n"
+""
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:927
+msgid ""
+"Recent Errors:\n"
+""
+msgstr ""
+
+#. translators: %s is the error message details
+#: includes/aiohm-booking-mvp-admin.php:929
+#, php-format
+msgid ""
+"Error: %s\n"
+"\n"
+""
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:1292
+msgid "Paid"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:1540
+msgid "ID"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:1541
+msgid "Date"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:1542
+msgid "Buyer"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:1543
+msgid "Mode"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:1544
+#: templates/aiohm-booking-mvp-widget-classic.php:18
+msgid "Rooms"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:1544
+msgid "Guests"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:1545
+msgid "Total"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:1546
+msgid "Deposit"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:1547
+msgid "Status"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:1548
+msgid "Method"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:1549
+msgid "Actions"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:2021
+msgid "Plugin Language"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:2023
+msgid "English (Default)"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:2024
+msgid "Romanian"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-admin.php:2026
+msgid "Choose the language for your booking system interface"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-calendar.php:707
+msgid "Week"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-calendar.php:708
+msgid "Month"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-calendar.php:709
+msgid "Year"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-calendar.php:773
+msgid "Show"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-calendar.php:814
+msgid "Period:"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-calendar.php:818
+msgid "&lt; Prev"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-calendar.php:831
+msgid "Next &gt;"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-calendar.php:848
+msgid "From"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-calendar.php:851
+msgid "Until"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-calendar.php:880
+msgid "Accommodation"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-calendar.php:895
+msgid "No rooms configured"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-calendar.php:925
+msgid "No rooms configured."
+msgstr ""
+
+#. translators: %d is the booking ID number
+#: includes/aiohm-booking-mvp-calendar.php:1202
+#, php-format
+msgid "Check-out #%d"
+msgstr ""
+
+#. translators: %d is the booking ID number
+#: includes/aiohm-booking-mvp-calendar.php:1207
+#, php-format
+msgid "Check-in #%d"
+msgstr ""
+
+#. translators: %d is the booking ID number
+#: includes/aiohm-booking-mvp-calendar.php:1212
+#, php-format
+msgid "Booking #%d"
+msgstr ""
+
+#. translators: %d is the number of rooms
+#: includes/aiohm-booking-mvp-calendar.php:1257
+#, php-format
+msgid "Rooms: %d"
+msgstr ""
+
+#. translators: %1$s is the currency code, %2$s is the formatted amount
+#: includes/aiohm-booking-mvp-calendar.php:1263
+#, php-format
+msgid "Total: %1$s %2$s"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-calendar.php:1269
+msgid "Private booking (all rooms)"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-calendar.php:1284
+msgid "Booking Details"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-calendar.php:1289
+msgid "View Order"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-calendar.php:1304
+msgid "Filter by Status:"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-calendar.php:1306
+#: includes/aiohm-booking-mvp-calendar.php:1317
+msgid "Show All"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-calendar.php:1314
+msgid "Filter Calendar"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-calendar.php:1440
+msgid "Every 5 minutes"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-calendar.php:1441
+msgid "Every 15 minutes"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-calendar.php:1442
+msgid "Every 30 minutes"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-calendar.php:1443
+msgid "Every hour"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-calendar.php:1444
+msgid "Every 2 hours"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-calendar.php:1445
+msgid "Every 6 hours"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-calendar.php:1446
+msgid "Twice daily"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-calendar.php:1447
+msgid "Once daily"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-calendar.php:1448
+msgid "Manual only"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-calendar.php:1462
+msgid "Booking.com Sync"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-calendar.php:1465
+msgid "Synchronize your calendar with Booking.com using iCal feed. Set your preferred sync frequency or sync manually."
+msgstr ""
+
+#: includes/aiohm-booking-mvp-calendar.php:1473
+msgid "Booking.com iCal URL"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-calendar.php:1482
+#: includes/aiohm-booking-mvp-calendar.php:1537
+msgid "Auto-Sync Frequency"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-calendar.php:1494
+#: includes/aiohm-booking-mvp-calendar.php:1549
+msgid "Save Settings"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-calendar.php:1497
+#: includes/aiohm-booking-mvp-calendar.php:1552
+msgid "Sync Now"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-calendar.php:1517
+msgid "Airbnb Sync"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-calendar.php:1520
+msgid "Synchronize your calendar with Airbnb using iCal feed. Import blocked dates and reservations with your preferred sync frequency."
+msgstr ""
+
+#: includes/aiohm-booking-mvp-calendar.php:1528
+msgid "Airbnb iCal URL"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-cron.php:20
+msgid "Every 15 Minutes"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-shortcodes.php:24
+msgid "An unexpected error occurred. Please try again."
+msgstr ""
+
+#: includes/aiohm-booking-mvp-shortcodes.php:25
+msgid "Request timed out. Please check your connection and try again."
+msgstr ""
+
+#: includes/aiohm-booking-mvp-shortcodes.php:26
+msgid "Please enter your full name"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-shortcodes.php:27
+msgid "Please enter your email address"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-shortcodes.php:28
+msgid "Please enter a valid email address (e.g., name@example.com)"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-shortcodes.php:29
+msgid "Please enter your age"
+msgstr ""
+
+#. translators: %d is the minimum age requirement
+#: includes/aiohm-booking-mvp-shortcodes.php:31
+#, php-format
+msgid "Age must be at least %d years old"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-shortcodes.php:32
+msgid "Please enter a valid age (maximum 99)"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-shortcodes.php:33
+msgid "Please select at least one accommodation or choose \"Book Entire Property\""
+msgstr ""
+
+#: includes/aiohm-booking-mvp-shortcodes.php:34
+msgid "Please enter at least one guest"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-shortcodes.php:35
+msgid "Maximum number of guests is 20. Please contact us for larger groups."
+msgstr ""
+
+#: includes/aiohm-booking-mvp-shortcodes.php:36
+msgid "Check-out date must be after check-in date"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-shortcodes.php:37
+msgid "Form validation error. Please refresh the page and try again."
+msgstr ""
+
+#. translators: %s is the deposit percentage
+#: includes/aiohm-booking-mvp-shortcodes.php:39
+#, php-format
+msgid "Deposit Required (%s%)"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-shortcodes.php:40
+msgid "Creating hold..."
+msgstr ""
+
+#. translators: %d is the order number
+#: includes/aiohm-booking-mvp-shortcodes.php:42
+#, php-format
+msgid "Hold created successfully! Order #%d"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-shortcodes.php:43
+msgid "Invalid response from server"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-shortcodes.php:44
+msgid "Security token expired. Please refresh the page and try again."
+msgstr ""
+
+#: includes/aiohm-booking-mvp-shortcodes.php:45
+msgid "System temporarily unavailable. Please try again in a few moments."
+msgstr ""
+
+#: includes/aiohm-booking-mvp-shortcodes.php:46
+msgid "Hold creation failed. Please try again."
+msgstr ""
+
+#: includes/aiohm-booking-mvp-shortcodes.php:48
+msgid "January"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-shortcodes.php:48
+msgid "February"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-shortcodes.php:49
+msgid "March"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-shortcodes.php:49
+msgid "April"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-shortcodes.php:50
+msgid "May"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-shortcodes.php:50
+msgid "June"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-shortcodes.php:51
+msgid "July"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-shortcodes.php:51
+msgid "August"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-shortcodes.php:52
+msgid "September"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-shortcodes.php:52
+msgid "October"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-shortcodes.php:53
+msgid "November"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-shortcodes.php:53
+msgid "December"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-shortcodes.php:56
+msgctxt "short day name"
+msgid "Sun"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-shortcodes.php:56
+msgctxt "short day name"
+msgid "Mon"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-shortcodes.php:57
+msgctxt "short day name"
+msgid "Tue"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-shortcodes.php:57
+msgctxt "short day name"
+msgid "Wed"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-shortcodes.php:58
+msgctxt "short day name"
+msgid "Thu"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-shortcodes.php:58
+msgctxt "short day name"
+msgid "Fri"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-shortcodes.php:59
+msgctxt "short day name"
+msgid "Sat"
+msgstr ""
+
+#. translators: %s is the date type (check-in or check-out)
+#: includes/aiohm-booking-mvp-shortcodes.php:62
+#, php-format
+msgid "Select %s"
+msgstr ""
+
+#. translators: %1$s is the currency symbol, %2$s is the price amount
+#: includes/aiohm-booking-mvp-shortcodes.php:64
+#, php-format
+msgid "from %1$s %2$s"
+msgstr ""
+
+#. translators: %1$s is the currency symbol, %2$s is the price amount
+#: includes/aiohm-booking-mvp-shortcodes.php:66
+#, php-format
+msgid "%1$s %2$s per night"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-shortcodes.php:67
+#: templates/aiohm-booking-mvp-widget.php:329
+msgid "Select check-in first"
+msgstr ""
+
+#: includes/aiohm-booking-mvp-shortcodes.php:156
+msgid "Unable to start checkout. Please try again or contact support."
+msgstr ""
+
+#: includes/aiohm-booking-mvp-shortcodes.php:157
+msgid "Payment failed. Please try again or contact support."
+msgstr ""
+
+#. translators: %s is the product type (room, accommodation, etc.)
+#: templates/aiohm-booking-mvp-calendar.php:18
+#, php-format
+msgid "Visual booking calendar showing %s availability and reservations in real-time."
+msgstr ""
+
+#. translators: %s: accommodation type (rooms, houses, apartments, etc.)
+#: templates/aiohm-booking-mvp-checkout.php:106
+#, php-format
+msgid "Private Event (All %s):"
+msgstr ""
+
+#. translators: %s: accommodation type (rooms, houses, apartments, etc.)
+#: templates/aiohm-booking-mvp-checkout.php:114
+#, php-format
+msgid "Selected %s:"
+msgstr ""
+
+#. translators: %s: accommodation type (rooms, houses, apartments, etc.)
+#: templates/aiohm-booking-mvp-checkout.php:132
+#, php-format
+msgid "Private Event (All %s)"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-checkout.php:142
+msgid "Total Amount:"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-checkout.php:146
+msgid "Deposit Due:"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:37
+msgid "System Information"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:42
+msgid "Plugin Version:"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:46
+msgid "WordPress Version:"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:50
+msgid "PHP Version:"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:54
+msgid "Enabled Modules:"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:65
+msgid "Report Issue"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:70
+msgid "Basic Information"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:74
+msgid "Your Email:"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:80
+msgid "Type:"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:82
+msgid "Select type..."
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:83
+msgid "🐛 Bug Report"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:84
+msgid "💡 Feature Request"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:85
+msgid "🔧 Setup Help"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:86
+msgid "📅 Booking System Issues"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:87
+msgid "💳 Payment Issues"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:88
+msgid "🗓️ Calendar Issues"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:89
+msgid "🎛️ Widget Issues"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:90
+msgid "⚡ Performance Issues"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:91
+msgid "❓ Other"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:99
+msgid "Title"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:107
+msgid "Description and Debug Information"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:110
+msgid "Debug Information:"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:114
+msgid "Detailed Description:"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:132
+msgid "Include debug information with this report"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:141
+msgid "Collect Debug Info"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:145
+msgid "Send Report"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:152
+msgid "Debug Information"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:157
+msgid "Copy to Clipboard"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:161
+msgid "Download as File"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:174
+msgid "Quick Resources"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:181
+msgid "Documentation"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:182
+msgid "Complete booking system setup and usage guides"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:188
+msgid "WhatsApp Support Group"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:189
+msgid "Join our community for quick help and tips"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:201
+msgid "Your AIOHM Booking Journey"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:202
+msgid "From basic setup to seamless booking experiences - your path to booking transformation"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:210
+msgid "Installation & Setup"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:211
+msgid "Install AIOHM Booking plugin and configure your basic booking settings."
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:217
+msgid "Configure Settings"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:225
+msgid "Choose Your Booking Mode"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:226
+msgid "Select Rooms-only, Seats-only, or Both modes based on your business needs."
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:232
+#: templates/aiohm-booking-mvp-widget.php:251
+msgid "Configure Modules"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:240
+msgid "Set Up Your Inventory"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:241
+msgid "Configure rooms, events, and capacity settings for your booking system."
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:248
+msgid "Manage Inventory"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:250
+msgid "Enable Modules First"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:259
+msgid "Deploy Booking Widgets"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:260
+msgid "Add auto-adapting booking widgets to your site with shortcodes and manage bookings."
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:266
+msgid "Manage Bookings"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:275
+msgid "Translation Instructions"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:278
+msgid "Easy Plugin Translation"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:279
+msgid "Want to translate this plugin into your language? Follow these simple steps:"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:283
+msgid "Download a translation tool like Poedit (free) from"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:287
+msgid "Copy the file"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:289
+msgid "to create your language file (e.g.,"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:291
+msgid "for German)"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:294
+msgid "Open your new .po file in Poedit and translate all text strings"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:297
+msgid "Save the file - Poedit will automatically create the .mo file"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:300
+msgid "Upload both .po and .mo files to your"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:302
+msgid "folder"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:305
+msgid "Your plugin will automatically use the new language!"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:310
+msgid "Need help? Contact us at"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:312
+msgid "for translation assistance."
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:314
+msgid "Language Settings:"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:315
+msgid "You can also choose from available languages in"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:316
+msgid "Plugin Settings"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:322
+msgid "Need help with any step? Use the support form to get personalized assistance."
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:324
+msgid "Quick Shortcodes:"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:325
+msgid "Booking widget"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-help.php:326
+msgid "Checkout page"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-widget-classic.php:20
+msgid "Private event (book all rooms)"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-widget-classic.php:24
+msgid "Name"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-widget-classic.php:25
+msgid "Email"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-widget-classic.php:26
+msgid "Phone"
+msgstr ""
+
+#. translators: 1: formatted room price, 2: currency code, 3: deposit percentage
+#: templates/aiohm-booking-mvp-widget-classic.php:33
+#, php-format
+msgid "Room price: %1$s %2$s, Deposit: %3$s%"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-widget-classic.php:41
+msgid "Hold & Continue"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-widget.php:249
+msgid "Ready to Start Booking"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-widget.php:250
+msgid "Enable accommodation booking in Settings to begin accepting reservations"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-widget.php:296
+msgid "Occupied"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-widget.php:300
+msgid "Selected"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-widget.php:308
+msgid "Check-in Date"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-widget.php:312
+msgid "Duration (nights)"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-widget.php:320
+msgid "Number of Guests"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-widget.php:329
+msgid "Check-out:"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-widget.php:355
+msgid "Select one or more options. Prices are per night."
+msgstr ""
+
+#: templates/aiohm-booking-mvp-widget.php:387
+msgid "Book Entire Property"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-widget.php:391
+msgid "Select this option to book the entire property exclusively."
+msgstr ""
+
+#: templates/aiohm-booking-mvp-widget.php:406
+msgid "Full Name"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-widget.php:408
+msgid "Enter your name"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-widget.php:411
+msgid "Please enter your full name as it appears on your ID."
+msgstr ""
+
+#: templates/aiohm-booking-mvp-widget.php:415
+msgid "Email Address"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-widget.php:417
+msgid "Enter your email"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-widget.php:420
+msgid "We will send booking confirmations to this email address."
+msgstr ""
+
+#: templates/aiohm-booking-mvp-widget.php:427
+msgid "Phone Number"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-widget.php:429
+msgid "Enter your phone (optional)"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-widget.php:432
+msgid "Optional: We may contact you for booking updates."
+msgstr ""
+
+#: templates/aiohm-booking-mvp-widget.php:440
+msgid "Estimated Arrival Time"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-widget.php:446
+msgid "Purpose of Stay"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-widget.php:448
+msgid "Leisure / Vacation"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-widget.php:449
+msgid "Business / Work"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-widget.php:450
+msgid "Event / Retreat"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-widget.php:451
+msgid "Other"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-widget.php:462
+msgid "I am bringing pets"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-widget.php:466
+msgid "Pet Details"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-widget.php:467
+msgid "Please specify type and number of pets"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-widget.php:498
+msgid "VAT Number"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-widget.php:500
+msgid "For business invoices"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-widget.php:523
+msgid "Total:"
+msgstr ""
+
+#. translators: %d: number of days for early bird discount
+#: templates/aiohm-booking-mvp-widget.php:531
+#, php-format
+msgid "Early Bird (%d days):"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-widget.php:533
+msgid "Early Bird:"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-widget.php:539
+msgid "Deposit Required:"
+msgstr ""
+
+#: templates/aiohm-booking-mvp-widget.php:543
+msgid "You save:"
+msgstr ""

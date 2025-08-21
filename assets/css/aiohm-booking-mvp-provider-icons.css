@@ -1,0 +1,196 @@
+/* AI Provider Icons and Settings Styling */
+
+.aiohm-booking-ai-providers {
+    margin-top: 30px;
+}
+
+.aiohm-booking-ai-providers h3 {
+    font-family: var(--ohm-font-primary);
+    color: var(--ohm-dark-accent);
+    border-bottom: 2px solid var(--ohm-light-accent);
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+.aiohm-provider-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.aiohm-provider-card {
+    background: #fff;
+    border: 2px solid var(--ohm-light-bg);
+    border-radius: 8px;
+    padding: 20px;
+    transition: all 0.3s ease;
+}
+
+.aiohm-provider-card:hover {
+    border-color: var(--ohm-light-accent);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.aiohm-provider-card.connected {
+    border-color: var(--ohm-primary);
+    background: rgba(69, 125, 88, 0.05);
+}
+
+.aiohm-provider-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.aiohm-provider-icon {
+    width: 32px;
+    height: 32px;
+    margin-right: 12px;
+    border-radius: 4px;
+}
+
+.aiohm-provider-name {
+    font-family: var(--ohm-font-primary);
+    font-size: 18px;
+    font-weight: bold;
+    color: var(--ohm-dark-accent);
+    margin: 0;
+}
+
+.aiohm-provider-description {
+    color: var(--ohm-muted-accent);
+    font-size: 14px;
+    margin-bottom: 15px;
+    line-height: 1.4;
+}
+
+.aiohm-api-key-section {
+    margin-bottom: 15px;
+}
+
+.aiohm-api-key-section label {
+    display: block;
+    font-weight: bold;
+    color: var(--ohm-dark-accent);
+    margin-bottom: 5px;
+    font-family: var(--ohm-font-primary);
+}
+
+.aiohm-api-key-wrapper {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.aiohm-api-key-wrapper input[type="password"] {
+    flex: 1;
+    min-width: 200px;
+    font-family: monospace;
+    border: 1px solid var(--ohm-light-accent);
+}
+
+.aiohm-api-key-wrapper input[type="password"]:focus {
+    border-color: var(--ohm-primary);
+    box-shadow: 0 0 0 1px var(--ohm-primary);
+}
+
+.aiohm-provider-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.aiohm-provider-actions .button {
+    font-size: 12px;
+    height: auto;
+    padding: 6px 12px;
+}
+
+.aiohm-show-hide-key {
+    background: var(--ohm-light-bg) !important;
+    border-color: var(--ohm-muted-accent) !important;
+    min-width: 40px;
+}
+
+.aiohm-test-api-key {
+    background: var(--ohm-primary) !important;
+    border-color: var(--ohm-primary) !important;
+    color: white !important;
+}
+
+.aiohm-test-api-key:hover {
+    background: var(--ohm-dark-accent) !important;
+    border-color: var(--ohm-dark-accent) !important;
+}
+
+.aiohm-save-api-key {
+    background: var(--ohm-light-accent) !important;
+    border-color: var(--ohm-muted-accent) !important;
+    color: var(--ohm-dark-accent) !important;
+}
+
+.aiohm-connection-status {
+    margin-top: 10px;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: bold;
+}
+
+.aiohm-connection-status.success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.aiohm-connection-status.error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.aiohm-connection-status.testing {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+
+/* Provider-specific icons */
+.aiohm-provider-card[data-provider="openai"] .aiohm-provider-icon {
+    background: url('../images/aiohm-booking-openai-icon.svg') no-repeat center;
+    background-size: contain;
+}
+
+.aiohm-provider-card[data-provider="gemini"] .aiohm-provider-icon {
+    background: url('../images/aiohm-booking-gemini-icon.svg') no-repeat center;
+    background-size: contain;
+}
+
+.aiohm-provider-card[data-provider="shareai"] .aiohm-provider-icon {
+    background: url('../images/aiohm-booking-shareai-icon.jpeg') no-repeat center;
+    background-size: cover;
+    border-radius: 50%;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .aiohm-provider-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .aiohm-api-key-wrapper {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .aiohm-api-key-wrapper input[type="password"] {
+        margin-bottom: 10px;
+        min-width: auto;
+    }
+
+    .aiohm-provider-actions {
+        justify-content: center;
+    }
+}

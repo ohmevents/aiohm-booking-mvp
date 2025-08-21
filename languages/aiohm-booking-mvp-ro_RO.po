@@ -1,0 +1,462 @@
+# Romanian (Romania) language file for AIOHM Booking MVP
+# Copyright (C) 2025 OHM Events Agency
+# This file is distributed under the GPLv2 or later.
+msgid ""
+msgstr ""
+"Project-Id-Version: AIOHM Booking MVP 1.0.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/aiohm-booking-mvp\n"
+"Last-Translator: OHM Events Agency <info@ohm.events>\n"
+"Language-Team: Romanian <ro@li.org>\n"
+"Language: ro_RO\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2025-08-21T01:40:57+00:00\n"
+"PO-Revision-Date: 2025-08-21 02:00+0000\n"
+"X-Generator: Manual Translation\n"
+"X-Domain: aiohm-booking-mvp\n"
+"Plural-Forms: nplurals=3; plural=(n==1 ? 0 : (n==0 || (n%100 > 0 && n%100 < 20)) ? 1 : 2);\n"
+
+#. Plugin Name of the plugin
+#: aiohm-booking-mvp.php
+msgid "AIOHM Booking MVP"
+msgstr "AIOHM Rezervări MVP"
+
+#. Description of the plugin
+#: aiohm-booking-mvp.php
+msgid "Transform your WordPress into a seamless accommodation booking experience. Focuses exclusively on room and accommodation bookings with deposits, payments, and full customization. Built with AIOHM's signature attention to conscious business flow."
+msgstr "Transformă WordPress-ul tău într-o experiență de rezervare fără cusur. Se concentrează exclusiv pe rezervări de camere și cazare cu avansuri, plăți și personalizare completă. Construit cu atenția caracteristică AIOHM pentru fluxul de afaceri conștient."
+
+# Common form fields
+msgid "Name"
+msgstr "Nume"
+
+msgid "Email"
+msgstr "Email"
+
+msgid "Phone"
+msgstr "Telefon"
+
+msgid "Address"
+msgstr "Adresă"
+
+msgid "Country"
+msgstr "Țară"
+
+msgid "Company"
+msgstr "Companie"
+
+msgid "Age"
+msgstr "Vârstă"
+
+# Booking terms
+msgid "Rooms"
+msgstr "Camere"
+
+msgid "Guests"
+msgstr "Oaspeți"
+
+msgid "Total"
+msgstr "Total"
+
+msgid "Deposit"
+msgstr "Avans"
+
+msgid "Currency"
+msgstr "Monedă"
+
+msgid "Booking"
+msgstr "Rezervare"
+
+msgid "Order"
+msgstr "Comandă"
+
+msgid "Check-in"
+msgstr "Check-in"
+
+msgid "Check-out"
+msgstr "Check-out"
+
+# Settings and admin
+msgid "Settings"
+msgstr "Setări"
+
+msgid "Dashboard"
+msgstr "Tablou de bord"
+
+msgid "Orders"
+msgstr "Comenzi"
+
+msgid "Calendar"
+msgstr "Calendar"
+
+msgid "Help"
+msgstr "Ajutor"
+
+msgid "Save Settings"
+msgstr "Salvează setările"
+
+msgid "Configuration"
+msgstr "Configurare"
+
+# Booking process
+msgid "Hold & Continue"
+msgstr "Rezervă & Continuă"
+
+msgid "Book Now"
+msgstr "Rezervă acum"
+
+msgid "Continue to Payment"
+msgstr "Continuă la plată"
+
+msgid "Pay with Card"
+msgstr "Plătește cu cardul"
+
+msgid "Pay with PayPal"
+msgstr "Plătește cu PayPal"
+
+# Status messages
+msgid "Pending"
+msgstr "În așteptare"
+
+msgid "Paid"
+msgstr "Plătit"
+
+msgid "Cancelled"
+msgstr "Anulat"
+
+msgid "Expired"
+msgstr "Expirat"
+
+msgid "Confirmed"
+msgstr "Confirmat"
+
+# Booking details
+msgid "Total Amount:"
+msgstr "Suma totală:"
+
+msgid "Deposit Due:"
+msgstr "Avans de plată:"
+
+msgid "Deposit Required (%s%)"
+msgstr "Avans necesar (%s%)"
+
+msgid "Room price: %1$s %2$s, Deposit: %3$s%"
+msgstr "Preț cameră: %1$s %2$s, Avans: %3$s%"
+
+msgid "Private event (book all rooms)"
+msgstr "Eveniment privat (rezervă toate camerele)"
+
+msgid "Private Event (All %s)"
+msgstr "Eveniment privat (Toate %s)"
+
+msgid "Selected %s:"
+msgstr "%s selectate:"
+
+# Accommodation types
+msgid "Room"
+msgstr "Cameră"
+
+msgid "House"
+msgstr "Casă"
+
+msgid "Apartment"
+msgstr "Apartament"
+
+msgid "Villa"
+msgstr "Vilă"
+
+msgid "Bungalow"
+msgstr "Bungalou"
+
+msgid "Cabin"
+msgstr "Cabană"
+
+msgid "Cottage"
+msgstr "Căsuță"
+
+msgid "Suite"
+msgstr "Suită"
+
+msgid "Studio"
+msgstr "Studio"
+
+msgid "Unit"
+msgstr "Unitate"
+
+msgid "Space"
+msgstr "Spațiu"
+
+msgid "Venue"
+msgstr "Local"
+
+# Error messages
+msgid "Please enter your name"
+msgstr "Te rugăm să introduci numele"
+
+msgid "Please enter a valid email address"
+msgstr "Te rugăm să introduci o adresă de email validă"
+
+msgid "Please select at least one room"
+msgstr "Te rugăm să selectezi cel puțin o cameră"
+
+msgid "Please enter at least one guest"
+msgstr "Te rugăm să introduci cel puțin un oaspete"
+
+msgid "Maximum number of guests is 20. Please contact us for larger groups."
+msgstr "Numărul maxim de oaspeți este 20. Te rugăm să ne contactezi pentru grupuri mai mari."
+
+msgid "Check-out date must be after check-in date"
+msgstr "Data de check-out trebuie să fie după data de check-in"
+
+msgid "Form validation error. Please refresh the page and try again."
+msgstr "Eroare de validare a formularului. Te rugăm să reîmprospătezi pagina și să încerci din nou."
+
+msgid "Creating hold..."
+msgstr "Se creează rezervarea..."
+
+msgid "Hold created successfully! Order #%d"
+msgstr "Rezervare creată cu succes! Comanda #%d"
+
+msgid "Invalid response from server"
+msgstr "Răspuns invalid de la server"
+
+msgid "Security token expired. Please refresh the page and try again."
+msgstr "Token-ul de securitate a expirat. Te rugăm să reîmprospătezi pagina și să încerci din nou."
+
+# Booking summary
+msgid "Order Summary"
+msgstr "Sumar comandă"
+
+msgid "Booking Not Found"
+msgstr "Rezervarea nu a fost găsită"
+
+msgid "We couldn't locate your booking. Please try again or contact us if you need assistance."
+msgstr "Nu am putut localiza rezervarea ta. Te rugăm să încerci din nou sau contactează-ne dacă ai nevoie de asistență."
+
+msgid "Secure Payment"
+msgstr "Plată securizată"
+
+msgid "Choose your preferred payment method to complete your booking securely:"
+msgstr "Alege metoda de plată preferată pentru a finaliza rezervarea în siguranță:"
+
+msgid "Credit Card"
+msgstr "Card de credit"
+
+msgid "Visa, Mastercard, American Express"
+msgstr "Visa, Mastercard, American Express"
+
+msgid "Pay with your PayPal account"
+msgstr "Plătește cu contul tău PayPal"
+
+msgid "SSL Encrypted"
+msgstr "Criptat SSL"
+
+msgid "Secure Checkout"
+msgstr "Checkout securizat"
+
+msgid "PCI Compliant"
+msgstr "Compatibil PCI"
+
+# Admin interface
+msgid "AIOHM Booking Dashboard"
+msgstr "Tablou de bord AIOHM Rezervări"
+
+msgid "Conscious event booking made simple. Modular, transparent, and aligned with your values."
+msgstr "Rezervarea evenimentelor conștiente făcută simplu. Modulară, transparentă și aliniată cu valorile tale."
+
+msgid "Total Orders"
+msgstr "Total comenzi"
+
+msgid "Total Revenue"
+msgstr "Venituri totale"
+
+msgid "Orders Management"
+msgstr "Gestionarea comenzilor"
+
+msgid "Track and manage all your booking orders from one conscious dashboard."
+msgstr "Urmărește și gestionează toate comenzile de rezervare dintr-un singur tablou de bord conștient."
+
+msgid "Booking Configuration"
+msgstr "Configurarea rezervărilor"
+
+msgid "Configure your booking modules to align with your venue's unique offering and values."
+msgstr "Configurează modulele de rezervare pentru a se alinia cu oferta unică și valorile localului tău."
+
+# Module descriptions
+msgid "Accommodation Module"
+msgstr "Modulul de cazare"
+
+msgid "Perfect for:"
+msgstr "Perfect pentru:"
+
+msgid "Accommodations, vacation rentals, hotels, venues, houses, bungalows, and private spaces."
+msgstr "Cazări, închirieri de vacanță, hoteluri, locații, case, bungalouri și spații private."
+
+msgid "Features:"
+msgstr "Caracteristici:"
+
+msgid "Individual room booking, entire property options, flexible pricing per room."
+msgstr "Rezervarea camerei individuale, opțiuni pentru întreaga proprietate, prețuri flexibile per cameră."
+
+msgid "Use cases:"
+msgstr "Cazuri de utilizare:"
+
+msgid "Rent rooms in your property, offer entire house bookings, manage multiple accommodation units."
+msgstr "Închiriază camere în proprietatea ta, oferă rezervări pentru întreaga casă, gestionează multiple unități de cazare."
+
+# Welcome section
+msgid "Welcome to AIOHM Booking"
+msgstr "Bun venit la AIOHM Rezervări"
+
+msgid "Experience the future of conscious hospitality with"
+msgstr "Experimentează viitorul ospitalității conștiente cu"
+
+msgid "where we create tools to make the marketing journey more beautiful."
+msgstr "unde creăm instrumente pentru a face călătoria de marketing mai frumoasă."
+
+msgid "Our first flagship plugin"
+msgstr "Primul nostru plugin principal"
+
+msgid "represents our commitment to transparent, value-driven solutions."
+msgstr "reprezintă angajamentul nostru pentru soluții transparente, bazate pe valori."
+
+msgid "This release introduces a revolutionary concept:"
+msgstr "Această lansare introduce un concept revoluționar:"
+
+msgid "the first WordPress plugin with AI statistics integration"
+msgstr "primul plugin WordPress cu integrare de statistici AI"
+
+msgid "giving you the power to analyze any data you collect about your guests with unprecedented insight and clarity."
+msgstr "oferindu-ți puterea de a analiza orice date colectezi despre oaspeții tăi cu o perspicacitate și claritate fără precedent."
+
+msgid "What makes AIOHM special:"
+msgstr "Ce face AIOHM special:"
+
+msgid "AI-Powered Analytics"
+msgstr "Analiză alimentată de AI"
+
+msgid "Deep insights into guest behavior"
+msgstr "Perspective profunde asupra comportamentului oaspeților"
+
+msgid "Conscious Design"
+msgstr "Design conștient"
+
+msgid "Built with sustainability in mind"
+msgstr "Construit cu gândul la sustenabilitate"
+
+msgid "Modular Architecture"
+msgstr "Arhitectură modulară"
+
+msgid "Only use what you need"
+msgstr "Folosește doar ce ai nevoie"
+
+msgid "Data Intelligence"
+msgstr "Inteligență de date"
+
+msgid "Turn bookings into actionable insights"
+msgstr "Transformă rezervările în perspective acționabile"
+
+# AI Analytics Module
+msgid "AI Analytics Module"
+msgstr "Modulul de analiză AI"
+
+msgid "Data-driven hospitality businesses, analytics enthusiasts, and conscious venue operators."
+msgstr "Afaceri de ospitalitate bazate pe date, entuziaști ai analizelor și operatori de locații conștienți."
+
+msgid "Guest behavior analysis, booking pattern insights, revenue optimization, predictive analytics."
+msgstr "Analiza comportamentului oaspeților, perspective asupra modelelor de rezervare, optimizarea veniturilor, analiză predictivă."
+
+msgid "Understand guest preferences, optimize pricing strategies, predict seasonal trends, improve customer satisfaction."
+msgstr "Înțelege preferințele oaspeților, optimizează strategiile de prețuri, prezice tendințele sezoniere, îmbunătățește satisfacția clienților."
+
+msgid "Status:"
+msgstr "Stare:"
+
+msgid "Active & Learning"
+msgstr "Activ și învățare"
+
+msgid "Data Points Collected:"
+msgstr "Puncte de date colectate:"
+
+msgid "AI Provider:"
+msgstr "Furnizor AI:"
+
+# Quick setup
+msgid "Quick Setup & Next Steps"
+msgstr "Configurare rapidă și pașii următori"
+
+msgid "Getting Started:"
+msgstr "Să începem:"
+
+msgid "Enable your modules in"
+msgstr "Activează modulele în"
+
+msgid "Configure pricing and availability"
+msgstr "Configurează prețurile și disponibilitatea"
+
+msgid "Use shortcodes to display booking forms"
+msgstr "Folosește shortcode-uri pentru a afișa formularele de rezervare"
+
+msgid "Review AI analytics insights"
+msgstr "Revizuiește perspectivele analizelor AI"
+
+# Language settings
+msgid "Language Settings"
+msgstr "Setări de limbă"
+
+msgid "Plugin Language"
+msgstr "Limba plugin-ului"
+
+msgid "Choose the language for your booking system interface"
+msgstr "Alege limba pentru interfața sistemului de rezervări"
+
+msgid "English (Default)"
+msgstr "Engleză (Implicit)"
+
+msgid "Romanian"
+msgstr "Română"
+
+# Translation instructions
+msgid "Translation Instructions"
+msgstr "Instrucțiuni de traducere"
+
+msgid "Easy Plugin Translation"
+msgstr "Traducerea ușoară a plugin-ului"
+
+msgid "Want to translate this plugin into your language? Follow these simple steps:"
+msgstr "Vrei să traduci acest plugin în limba ta? Urmează acești pași simpli:"
+
+msgid "Download a translation tool like Poedit (free) from"
+msgstr "Descarcă un instrument de traducere precum Poedit (gratuit) de la"
+
+msgid "Copy the file"
+msgstr "Copiază fișierul"
+
+msgid "to create your language file (e.g.,"
+msgstr "pentru a crea fișierul de limbă (de ex.,"
+
+msgid "for German)"
+msgstr "pentru germană)"
+
+msgid "Open your new .po file in Poedit and translate all text strings"
+msgstr "Deschide noul fișier .po în Poedit și traduce toate textele"
+
+msgid "Save the file - Poedit will automatically create the .mo file"
+msgstr "Salvează fișierul - Poedit va crea automat fișierul .mo"
+
+msgid "Upload both .po and .mo files to your"
+msgstr "Încarcă ambele fișiere .po și .mo în"
+
+msgid "folder"
+msgstr "folder"
+
+msgid "Your plugin will automatically use the new language!"
+msgstr "Plugin-ul tău va folosi automat noua limbă!"
+
+msgid "Need help? Contact us at"
+msgstr "Ai nevoie de ajutor? Contactează-ne la"
+
+msgid "for translation assistance."
+msgstr "pentru asistență la traducere."
+
