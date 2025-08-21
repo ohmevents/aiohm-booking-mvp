@@ -59,8 +59,3 @@ AIOHM Booking brings modular event management to conscious venues and creators. 
 * ✅ **Security Enhancements**: SQL injection prevention and secure data handling
 * ✅ **Performance Optimizations**: Cleaned debug code and optimized asset loading
 * ✅ **Professional Documentation**: Complete PHPDoc comments and organized code structure
-
-= 0.1.0 =
-* Initial development version
-* Basic booking functionality
-* Module system foundation
