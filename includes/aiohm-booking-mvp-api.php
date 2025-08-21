@@ -138,7 +138,36 @@ class AIOHM_BOOKING_MVP_API {
         $check_in_date  = sanitize_text_field($p['check_in_date'] ?? ($p['checkin_date'] ?? '')) ?: null;
         $check_out_date = sanitize_text_field($p['check_out_date'] ?? ($p['checkout_date'] ?? '')) ?: null;
 
-        $total = self::calculate_accommodation_total($room_ids, $rooms_qty, $private_all, $opts, $check_in_date, $check_out_date);
+        // Check for private event days
+        $private_events = get_option('aiohm_booking_mvp_private_events', []);
+        $booking_dates = self::get_booking_date_range($check_in_date, $check_out_date);
+        $has_private_only_days = false;
+        $private_event_info = null;
+
+        foreach ($booking_dates as $date) {
+            if (isset($private_events[$date])) {
+                $event = $private_events[$date];
+                $mode = $event['mode'] ?? 'private_only';
+                
+                // Only block individual bookings for 'private_only' mode
+                if ($mode === 'private_only') {
+                    $has_private_only_days = true;
+                    $private_event_info = $event;
+                    break;
+                }
+            }
+        }
+
+        // If booking includes private-only event days, force private_all booking
+        if ($has_private_only_days && !$private_all) {
+            return new WP_Error(
+                'private_event_only', 
+                'This date is reserved for private events. Only full property bookings are available for ' . $private_event_info['name'] . '.', 
+                ['status' => 400, 'private_event' => true, 'event_info' => $private_event_info]
+            );
+        }
+
+        $total = self::calculate_accommodation_total($room_ids, $rooms_qty, $private_all, $opts, $check_in_date, $check_out_date, $private_event_info);
 
         if($total <= 0){
             return new WP_Error('invalid_total', 'Order total must be greater than 0', ['status' => 400]);
@@ -208,6 +237,7 @@ class AIOHM_BOOKING_MVP_API {
 
         return rest_ensure_response([
             'order_id'=>$order_id,
+            'buyer_email'=>$email,
             'total'=>$total,
             'deposit'=>$deposit,
             'currency'=>$opts['currency'],
@@ -490,11 +520,36 @@ class AIOHM_BOOKING_MVP_API {
         $base_price = !empty($all_prices) ? min($all_prices) : $default_price;
 
         $daily_prices = [];
+        $private_events_info = [];
+        $private_events = get_option('aiohm_booking_mvp_private_events', []);
+        
         $price_period_final = new DatePeriod($from_dt, new DateInterval('P1D'), (clone $to_dt)->modify('+1 day'));
         foreach ($price_period_final as $day) {
             $date_key = $day->format('Y-m-d');
-            // Use admin custom price if set, otherwise use the calculated base price
-            $daily_prices[$date_key] = $admin_custom_prices[$date_key] ?? $base_price;
+            
+            // Check for private events
+            if (isset($private_events[$date_key])) {
+                $event = $private_events[$date_key];
+                $event_mode = $event['mode'] ?? 'private_only';
+                
+                // Store event info for frontend
+                $private_events_info[$date_key] = [
+                    'mode' => $event_mode,
+                    'name' => $event['name'] ?? 'Private Event',
+                    'price' => floatval($event['price'] ?? 0)
+                ];
+                
+                // For special pricing mode, use the event price
+                if ($event_mode === 'special_pricing') {
+                    $daily_prices[$date_key] = floatval($event['price']);
+                } else {
+                    // For private_only, still show the custom price or base price for reference
+                    $daily_prices[$date_key] = $admin_custom_prices[$date_key] ?? $base_price;
+                }
+            } else {
+                // Use admin custom price if set, otherwise use the calculated base price
+                $daily_prices[$date_key] = $admin_custom_prices[$date_key] ?? $base_price;
+            }
         }
 
         // 5. Combine and determine fully occupied dates
@@ -513,6 +568,7 @@ class AIOHM_BOOKING_MVP_API {
         return rest_ensure_response([
             'occupied_dates' => array_values(array_unique($occupied_dates)),
             'daily_prices' => $daily_prices,
+            'private_events' => $private_events_info,
         ]);
     }
 
@@ -553,6 +609,34 @@ class AIOHM_BOOKING_MVP_API {
     }
 
     /**
+     * Get array of dates for a booking period
+     * @param string $check_in_date Check-in date (Y-m-d format)
+     * @param string $check_out_date Check-out date (Y-m-d format) 
+     * @return array Array of date strings in Y-m-d format
+     */
+    private static function get_booking_date_range($check_in_date, $check_out_date) {
+        $dates = [];
+        
+        if (!$check_in_date || !$check_out_date) {
+            return $dates;
+        }
+        
+        try {
+            $start = new DateTime($check_in_date);
+            $end = new DateTime($check_out_date);
+            $period = new DatePeriod($start, new DateInterval('P1D'), $end);
+            
+            foreach ($period as $day) {
+                $dates[] = $day->format('Y-m-d');
+            }
+        } catch (Exception $e) {
+            // Return empty array on error
+        }
+        
+        return $dates;
+    }
+
+    /**
      * Calculate accommodation pricing based on actual selected rooms or private all
      * @param array $room_ids Array of selected room IDs (0-based from frontend)
      * @param int $rooms_qty Quantity of rooms
@@ -560,7 +644,7 @@ class AIOHM_BOOKING_MVP_API {
      * @param array $opts Pricing options from settings
      * @return float Total accommodation cost
      */
-    private static function calculate_accommodation_total($room_ids, $rooms_qty, $private_all, $opts, $check_in_str = null, $check_out_str = null) {
+    private static function calculate_accommodation_total($room_ids, $rooms_qty, $private_all, $opts, $check_in_str = null, $check_out_str = null, $private_event_info = null) {
         $accommodation_details = get_option('aiohm_booking_mvp_accommodations_details', []);
         $admin_blocked_dates = get_option('aiohm_booking_mvp_blocked_dates', []);
         $default_room_price = $opts['room_price'];
@@ -568,6 +652,10 @@ class AIOHM_BOOKING_MVP_API {
 
         // Fallback to simple calculation if dates are not provided
         if (!$check_in_str || !$check_out_str) {
+            // Use private event price if applicable
+            if ($private_event_info && $private_all) {
+                return floatval($private_event_info['price']);
+            }
             return floatval($rooms_qty * $default_room_price);
         }
 
@@ -590,24 +678,44 @@ class AIOHM_BOOKING_MVP_API {
             $rooms_to_price = $room_ids;
         }
 
+        // Get private events for checking dates
+        $private_events = get_option('aiohm_booking_mvp_private_events', []);
+
         foreach ($period as $day) {
             $date_key = $day->format('Y-m-d');
             $daily_total = 0;
 
-            foreach ($rooms_to_price as $room_id) {
-                $accommodation_index = intval($room_id) - 1;
-                
-                $custom_price = null;
-                if (isset($admin_blocked_dates[$room_id][$date_key]) && !empty($admin_blocked_dates[$room_id][$date_key]['price'])) {
-                    $custom_price = floatval($admin_blocked_dates[$room_id][$date_key]['price']);
-                }
+            // Check if this date has a private event
+            $event_on_date = $private_events[$date_key] ?? null;
+            $event_mode = $event_on_date['mode'] ?? null;
+            
+            if ($event_on_date && $event_mode === 'private_only' && $private_all) {
+                // Private event with full property booking - use event price
+                $daily_total = floatval($event_on_date['price']);
+            } else {
+                // Regular room-by-room pricing (including special pricing days)
+                foreach ($rooms_to_price as $room_id) {
+                    $accommodation_index = intval($room_id) - 1;
+                    
+                    $custom_price = null;
+                    
+                    // Check for admin blocked dates with custom prices first
+                    if (isset($admin_blocked_dates[$room_id][$date_key]) && !empty($admin_blocked_dates[$room_id][$date_key]['price'])) {
+                        $custom_price = floatval($admin_blocked_dates[$room_id][$date_key]['price']);
+                    }
+                    // Check for special pricing events (not private_only)
+                    elseif ($event_on_date && $event_mode === 'special_pricing') {
+                        // For special pricing, use the event price per room
+                        $custom_price = floatval($event_on_date['price']);
+                    }
 
-                if ($custom_price !== null && $custom_price >= 0) {
-                    $daily_total += $custom_price;
-                } else {
-                    $details = $accommodation_details[$accommodation_index] ?? [];
-                    $price = !empty($details['price']) ? floatval($details['price']) : $default_room_price;
-                    $daily_total += $price;
+                    if ($custom_price !== null && $custom_price >= 0) {
+                        $daily_total += $custom_price;
+                    } else {
+                        $details = $accommodation_details[$accommodation_index] ?? [];
+                        $price = !empty($details['price']) ? floatval($details['price']) : $default_room_price;
+                        $daily_total += $price;
+                    }
                 }
             }
             $total += $daily_total;

@@ -288,6 +288,105 @@
 .legend-pending { background: #ffb900; }
 .legend-external { background: var(--ohm-muted-accent); }
 .legend-blocked { background: #111111; }
+.legend-special-pricing { background: #ff9800; border: 1px solid #e65100; }
+.legend-private-only { background: #2196f3; border: 1px solid #1565c0; }
+
+/* Special Events Management Layout */
+.aiohm-special-events-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    align-items: start;
+}
+
+/* Radio button hover effects */
+.aiohm-special-event-form label:has(input[type="radio"]):hover {
+    background-color: #f8f9fa;
+    border-color: #6f42c1 !important;
+}
+
+.aiohm-special-event-form label:has(input[type="radio"]:checked) {
+    background-color: #f0f4ff;
+    border-color: #6f42c1 !important;
+}
+
+/* Remove button styles */
+.aiohm-remove-event-btn {
+    transition: all 0.2s ease;
+    opacity: 0.7;
+}
+
+.aiohm-remove-event-btn:hover {
+    background: #a71e2a !important;
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+.aiohm-remove-event-btn:active {
+    transform: scale(0.95);
+}
+
+.aiohm-private-event-item:hover .aiohm-remove-event-btn {
+    opacity: 1;
+}
+
+/* Scrollable events container */
+.aiohm-events-scroll {
+    min-height: 400px;
+    max-height: 400px;
+    overflow-y: auto;
+    padding-right: 8px;
+    scrollbar-width: thin;
+    scrollbar-color: #ccc #f1f1f1;
+    position: relative;
+}
+
+.aiohm-events-scroll::after {
+    content: '';
+    position: sticky;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 20px;
+    background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.8));
+    pointer-events: none;
+    margin-top: -20px;
+    z-index: 1;
+}
+
+.aiohm-events-scroll::-webkit-scrollbar {
+    width: 6px;
+}
+
+.aiohm-events-scroll::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.aiohm-events-scroll::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 3px;
+}
+
+.aiohm-events-scroll::-webkit-scrollbar-thumb:hover {
+    background: #999;
+}
+
+/* Responsive breakpoints for special events */
+@media (max-width: 1024px) {
+    .aiohm-special-events-layout {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
+    .aiohm-special-events-settings {
+        order: 1;
+    }
+    
+    .aiohm-special-events-display {
+        order: 2;
+    }
+}
 
 /* Calendar Tables Layout */
 .aiohm-booking-calendar-tables-wrapper {
@@ -478,6 +577,31 @@
 .aiohm-date-blocked {
     background: #111111 !important; /* Blocked = Black */
     color: #fff;
+}
+
+/* Private Event Styles */
+.aiohm-date-special-pricing {
+    background: #fff3e0 !important; /* Light orange background for special pricing */
+    color: #e65100;
+    border: 1px solid #ff9800;
+    box-shadow: inset 0 0 0 1px rgba(255, 152, 0, 0.3);
+}
+
+.aiohm-date-special-pricing:hover {
+    background: #ffe0b3 !important;
+    box-shadow: inset 0 0 0 1px rgba(255, 152, 0, 0.5);
+}
+
+.aiohm-date-private-only {
+    background: #e3f2fd !important; /* Light blue background for private only */
+    color: #1565c0;
+    border: 1px solid #2196f3;
+    box-shadow: inset 0 0 0 1px rgba(33, 150, 243, 0.3);
+}
+
+.aiohm-date-private-only:hover {
+    background: #bbdefb !important;
+    box-shadow: inset 0 0 0 1px rgba(33, 150, 243, 0.5);
 }
 
 /* Check-in/out half-day indicators */

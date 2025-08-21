@@ -210,6 +210,62 @@
     border-radius: 0;
 }
 
+/* Special Event Day Styles */
+.aiohm-booking-mvp-modern .calendar-day.special-pricing {
+    background: #fff3e0;
+    color: #e65100;
+    border: 2px solid #ff9800;
+    position: relative;
+}
+
+.aiohm-booking-mvp-modern .calendar-day.special-pricing:hover {
+    background: #ffe0b3;
+    border-color: #f57c00;
+}
+
+.aiohm-booking-mvp-modern .calendar-day.special-pricing.selected {
+    background: #ff9800;
+    color: white;
+    border-color: #e65100;
+}
+
+.aiohm-booking-mvp-modern .calendar-day.private-only {
+    background: #e3f2fd;
+    color: #1565c0;
+    border: 2px solid #2196f3;
+    position: relative;
+}
+
+.aiohm-booking-mvp-modern .calendar-day.private-only:hover {
+    background: #bbdefb;
+    border-color: #1976d2;
+}
+
+.aiohm-booking-mvp-modern .calendar-day.private-only.selected {
+    background: #2196f3;
+    color: white;
+    border-color: #1565c0;
+}
+
+/* Special event indicators */
+.aiohm-booking-mvp-modern .calendar-day.special-pricing::after,
+.aiohm-booking-mvp-modern .calendar-day.private-only::after {
+    content: "●";
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    font-size: 8px;
+    line-height: 1;
+}
+
+.aiohm-booking-mvp-modern .calendar-day.special-pricing::after {
+    color: #ff9800;
+}
+
+.aiohm-booking-mvp-modern .calendar-day.private-only::after {
+    color: #2196f3;
+}
+
 /* Price Tooltip for Calendar */
 .calendar-price-tooltip {
     position: absolute;

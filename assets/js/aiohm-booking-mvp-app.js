@@ -525,17 +525,26 @@
           // Redirect to checkout after short delay
           setTimeout(() => {
             const checkoutUrl = window.AIOHM_BOOKING.checkout_url || '';
-            const buyerEmail = data.buyer_email || '';
+            const buyerEmail = result.buyer_email || data.email || '';
+            
+            // Debug logging
+            console.log('Order created:', result.order_id);
+            console.log('Buyer email from API:', result.buyer_email);
+            console.log('Email from form:', data.email);
+            console.log('Final email used:', buyerEmail);
+            console.log('Checkout URL:', checkoutUrl);
             
             if (checkoutUrl) {
                 const url = new URL(checkoutUrl);
                 url.searchParams.set('order_id', result.order_id);
                 if (buyerEmail) url.searchParams.set('email', buyerEmail);
+                console.log('Final redirect URL:', url.toString());
                 window.location = url.toString();
             } else {
                 const url = new URL(window.location.href);
                 url.searchParams.set('order_id', result.order_id);
                 if (buyerEmail) url.searchParams.set('email', buyerEmail);
+                console.log('Final redirect URL:', url.toString());
                 window.location = url.toString().split('#')[0] + '#checkout';
             }
           }, 1500);
@@ -555,6 +564,18 @@
           userMessage = AIOHM_BOOKING.i18n.nonceExpired;
         } else if (error.message.includes('database')) {
           userMessage = AIOHM_BOOKING.i18n.systemUnavailable;
+        } else if (error.message.includes('private event')) {
+          // Special handling for private event errors - show option to switch to private booking
+          userMessage = error.message + '\n\nWould you like to book the entire property instead?';
+          if (confirm(userMessage)) {
+            // Enable private all checkbox if available
+            const privateAllCheckbox = form.querySelector('#private_all_checkbox, [name="private_all"]');
+            if (privateAllCheckbox) {
+              privateAllCheckbox.checked = true;
+              privateAllCheckbox.dispatchEvent(new Event('change'));
+            }
+          }
+          return; // Don't show regular error message
         } else {
           userMessage = error.message || AIOHM_BOOKING.i18n.holdFailed;
         }
@@ -805,6 +826,7 @@
 
   // Global dailyPrices object for calendar pricing
   let dailyPrices = {};
+  let privateEvents = {};
 
   // Visual Calendar Implementation
   function initVisualCalendar() {
@@ -925,6 +947,7 @@
             // Convert date strings to Date objects
             occupiedDates = data.occupied_dates.map(dateStr => new Date(dateStr + 'T00:00:00'));
             dailyPrices = data.daily_prices || {};
+            privateEvents = data.private_events || {};
           })
           .catch(error => {
             // Error fetching availability data
@@ -935,6 +958,7 @@
         // Fetch API not available, using empty availability data
         occupiedDates = [];
         dailyPrices = {};
+        privateEvents = {};
         return typeof Promise !== 'undefined' ? Promise.resolve() : null;
       }
     }
@@ -1014,6 +1038,16 @@
           dayElement.classList.add('occupied');
         } else {
           dayElement.classList.add('available');
+          
+          // Add private event classes if applicable
+          if (privateEvents[dateString]) {
+            const eventMode = privateEvents[dateString].mode;
+            if (eventMode === 'special_pricing') {
+              dayElement.classList.add('special-pricing');
+            } else if (eventMode === 'private_only') {
+              dayElement.classList.add('private-only');
+            }
+          }
 
           // Make focusable and add keyboard support
           dayElement.setAttribute('tabindex', '0');

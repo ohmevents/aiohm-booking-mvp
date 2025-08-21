@@ -460,6 +460,18 @@ class AIOHM_BOOKING_MVP_Calendar {
             $date_details = array_merge($date_details, $this->booking_data[$room_id][$date_formatted]);
         }
 
+        // Check for private events (special pricing or private only)
+        $private_events = get_option('aiohm_booking_mvp_private_events', []);
+        if (isset($private_events[$date_formatted])) {
+            $event = $private_events[$date_formatted];
+            $mode = $event['mode'] ?? 'private_only';
+            
+            $date_details['has_private_event'] = true;
+            $date_details['private_event_mode'] = $mode;
+            $date_details['private_event_name'] = $event['name'] ?? 'Private Event';
+            $date_details['private_event_price'] = $event['price'] ?? 0;
+        }
+
         return $date_details;
     }
 
@@ -865,6 +877,8 @@ class AIOHM_BOOKING_MVP_Calendar {
             <span class="legend-item"><span class="legend-dot legend-pending" aria-hidden="true"></span><span class="legend-text">Pending</span></span>
             <span class="legend-item"><span class="legend-dot legend-external" aria-hidden="true"></span><span class="legend-text">External</span></span>
             <span class="legend-item"><span class="legend-dot legend-blocked" aria-hidden="true"></span><span class="legend-text">Blocked</span></span>
+            <span class="legend-item"><span class="legend-dot legend-special-pricing" aria-hidden="true"></span><span class="legend-text">Special Pricing</span></span>
+            <span class="legend-item"><span class="legend-dot legend-private-only" aria-hidden="true"></span><span class="legend-text">Private Only</span></span>
         </div>
         <?php
     }
@@ -1105,6 +1119,21 @@ class AIOHM_BOOKING_MVP_Calendar {
         if (!empty($date_details['is_private'])) {
             $classes['second'] .= ' aiohm-date-room-locked aiohm-date-private';
         }
+
+        // Private event classes (special pricing or private only)
+        if (!empty($date_details['has_private_event'])) {
+            $mode = $date_details['private_event_mode'] ?? 'private_only';
+            
+            if ($mode === 'special_pricing') {
+                // Special pricing - orange styling, not locked
+                $classes['first'] .= ' aiohm-date-special-pricing';
+                $classes['second'] .= ' aiohm-date-special-pricing';
+            } else {
+                // Private only - blue styling, locked for individual bookings
+                $classes['first'] .= ' aiohm-date-private-only';
+                $classes['second'] .= ' aiohm-date-private-only aiohm-date-room-locked';
+            }
+        }
     }
 
     /**
@@ -1316,10 +1345,136 @@ class AIOHM_BOOKING_MVP_Calendar {
                     <button type="button" id="aiohm-calendar-reset-btn" class="button aiohm-reset-button">
                         <?php esc_html_e('Show All', 'aiohm-booking-mvp'); ?>
                     </button>
+                    <button type="button" id="aiohm-calendar-reset-all-days-btn" class="button aiohm-reset-all-days-button" style="margin-left: 10px; background-color: #dc3545; color: white; border-color: #dc3545;">
+                        <?php esc_html_e('Reset All Days', 'aiohm-booking-mvp'); ?>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Special Event Management Section -->
+            <div class="aiohm-special-events-section" style="margin-top: 20px; padding: 20px; background: #f9f9f9; border-radius: 8px;">
+                <h4 style="margin-top: 0;"><?php esc_html_e('Private Event Management', 'aiohm-booking-mvp'); ?></h4>
+                <p style="color: #666; margin-bottom: 20px;"><?php esc_html_e('Block entire property for private events. When a day is set as private event, only full property bookings are allowed.', 'aiohm-booking-mvp'); ?></p>
+                
+                <div class="aiohm-special-events-layout" style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; align-items: start;">
+                    <!-- Left Column: Settings -->
+                    <div class="aiohm-special-events-settings">
+                        <h5 style="margin-top: 0; margin-bottom: 15px; color: #333; border-bottom: 2px solid #6f42c1; padding-bottom: 5px; display: inline-block;"><?php esc_html_e('Event Settings', 'aiohm-booking-mvp'); ?></h5>
+                        
+                        <div class="aiohm-special-event-form">
+                            <div class="aiohm-form-group" style="margin-bottom: 15px;">
+                                <label for="aiohm-special-event-date" style="display: block; margin-bottom: 5px; font-weight: 600;"><?php esc_html_e('Event Date:', 'aiohm-booking-mvp'); ?></label>
+                                <input type="date" id="aiohm-special-event-date" class="aiohm-date-input" style="padding: 8px; border-radius: 4px; border: 1px solid #ddd; width: 100%;">
+                            </div>
+                            
+                            <div class="aiohm-form-group" style="margin-bottom: 15px;">
+                                <label for="aiohm-special-event-price" style="display: block; margin-bottom: 5px; font-weight: 600;"><?php esc_html_e('Price:', 'aiohm-booking-mvp'); ?></label>
+                                <input type="number" id="aiohm-special-event-price" class="aiohm-price-input" placeholder="0.00" step="0.01" min="0" style="padding: 8px; border-radius: 4px; border: 1px solid #ddd; width: 100%;">
+                            </div>
+                            
+                            <div class="aiohm-form-group" style="margin-bottom: 15px;">
+                                <label for="aiohm-special-event-name" style="display: block; margin-bottom: 5px; font-weight: 600;"><?php esc_html_e('Event Name:', 'aiohm-booking-mvp'); ?></label>
+                                <input type="text" id="aiohm-special-event-name" class="aiohm-event-name" placeholder="<?php esc_attr_e('Special Event', 'aiohm-booking-mvp'); ?>" maxlength="50" style="padding: 8px; border-radius: 4px; border: 1px solid #ddd; width: 100%;">
+                            </div>
+                            
+                            <div class="aiohm-form-group" style="margin-bottom: 20px;">
+                                <label style="display: block; margin-bottom: 8px; font-weight: 600;"><?php esc_html_e('Booking Mode:', 'aiohm-booking-mvp'); ?></label>
+                                <div style="display: flex; flex-direction: column; gap: 8px;">
+                                    <label style="display: flex; align-items: flex-start; gap: 8px; font-weight: normal; padding: 8px; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; transition: all 0.2s;">
+                                        <input type="radio" id="aiohm-event-mode-private" name="aiohm-event-mode" value="private_only" checked style="margin: 2px 0 0 0; flex-shrink: 0;">
+                                        <div>
+                                            <span style="font-weight: 600; color: #1565c0;"><?php esc_html_e('Private Event Only', 'aiohm-booking-mvp'); ?></span>
+                                            <div style="font-size: 12px; color: #666; margin-top: 2px;"><?php esc_html_e('Blocks individual rooms, full property only', 'aiohm-booking-mvp'); ?></div>
+                                        </div>
+                                    </label>
+                                    <label style="display: flex; align-items: flex-start; gap: 8px; font-weight: normal; padding: 8px; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; transition: all 0.2s;">
+                                        <input type="radio" id="aiohm-event-mode-special" name="aiohm-event-mode" value="special_pricing" style="margin: 2px 0 0 0; flex-shrink: 0;">
+                                        <div>
+                                            <span style="font-weight: 600; color: #e65100;"><?php esc_html_e('Special Pricing', 'aiohm-booking-mvp'); ?></span>
+                                            <div style="font-size: 12px; color: #666; margin-top: 2px;"><?php esc_html_e('Individual rooms at special price', 'aiohm-booking-mvp'); ?></div>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="aiohm-form-actions" style="display: flex; flex-direction: column; gap: 10px;">
+                                <button type="button" id="aiohm-set-private-event-btn" class="button button-primary" style="background-color: #6f42c1; border-color: #6f42c1; width: 100%; padding: 10px;">
+                                    <?php esc_html_e('Set Event', 'aiohm-booking-mvp'); ?>
+                                </button>
+                                
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Right Column: Current Events -->
+                    <div class="aiohm-special-events-display">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <h5 style="margin: 0; color: #333; border-bottom: 2px solid #457d58; padding-bottom: 5px; display: inline-block;"><?php esc_html_e('Current Events', 'aiohm-booking-mvp'); ?></h5>
+                            <span id="aiohm-events-count" style="background: #457d58; color: white; padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: 600;"></span>
+                        </div>
+                        
+                        <div class="aiohm-private-events-status" style="background: white; border-radius: 4px; border: 1px solid #ddd; min-height: 200px;">
+                            <div id="aiohm-private-events-list" style="padding: 15px;">
+                                <?php $this->renderCurrentPrivateEvents(); ?>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
         <?php
+    }
+
+    /**
+     * Render current private events list
+     */
+    private function renderCurrentPrivateEvents() {
+        $private_events = get_option('aiohm_booking_mvp_private_events', []);
+        
+        if (empty($private_events)) {
+            echo '<em style="color: #666;">' . esc_html__('No private events currently set.', 'aiohm-booking-mvp') . '</em>';
+            return;
+        }
+
+        // Sort events by date
+        ksort($private_events);
+        
+        $event_count = count($private_events);
+        $scroll_class = $event_count > 5 ? 'aiohm-events-scroll' : '';
+        
+        echo '<div class="aiohm-private-events-grid ' . $scroll_class . '" style="display: grid; grid-template-columns: 1fr; gap: 8px;">';
+        
+        foreach ($private_events as $date => $event) {
+            $date_obj = new DateTime($date);
+            $formatted_date = $date_obj->format('M j, Y');
+            $price = !empty($event['price']) ? number_format_i18n(floatval($event['price']), 2) : '0.00';
+            $currency = get_option('aiohm_booking_mvp_settings', [])['currency'] ?? 'USD';
+            $event_name = !empty($event['name']) ? esc_html($event['name']) : esc_html__('Private Event', 'aiohm-booking-mvp');
+            $mode = $event['mode'] ?? 'private_only';
+            
+            // Different styling based on mode
+            $bg_color = $mode === 'special_pricing' ? '#fff3e0' : '#e3f2fd';
+            $border_color = $mode === 'special_pricing' ? '#ff9800' : '#2196f3';
+            $text_color = $mode === 'special_pricing' ? '#e65100' : '#1565c0';
+            $mode_label = $mode === 'special_pricing' ? esc_html__('Special Pricing', 'aiohm-booking-mvp') : esc_html__('Private Only', 'aiohm-booking-mvp');
+            
+            echo '<div class="aiohm-private-event-item" style="padding: 8px 12px; background: ' . esc_attr($bg_color) . '; border-radius: 4px; border-left: 4px solid ' . esc_attr($border_color) . '; position: relative;">';
+            echo '<button class="aiohm-remove-event-btn" data-date="' . esc_attr($date) . '" style="position: absolute; top: 5px; right: 5px; background: #dc3545; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0;" title="' . esc_attr__('Remove Event', 'aiohm-booking-mvp') . '">×</button>';
+            echo '<div style="font-weight: 600; color: ' . esc_attr($text_color) . '; padding-right: 25px;">' . esc_html($formatted_date) . '</div>';
+            echo '<div style="color: #424242; font-size: 14px; margin-top: 2px; padding-right: 25px;">' . $event_name . '</div>';
+            echo '<div style="color: #666; font-size: 13px; margin-top: 2px; padding-right: 25px;">' . esc_html($price) . ' ' . esc_html($currency) . ' • ' . $mode_label . '</div>';
+            echo '</div>';
+        }
+        
+        echo '</div>';
+        
+        // Update the event count display
+        echo '<script>';
+        echo 'document.addEventListener("DOMContentLoaded", function() {';
+        echo 'const countElement = document.getElementById("aiohm-events-count");';
+        echo 'if (countElement) countElement.textContent = "' . count($private_events) . '";';
+        echo '});';
+        echo '</script>';
     }
 
     /**

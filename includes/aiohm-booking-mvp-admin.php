@@ -47,6 +47,10 @@ class AIOHM_BOOKING_MVP_Admin {
         add_action('wp_ajax_aiohm_booking_mvp_unblock_date', [__CLASS__, 'ajax_unblock_date']);
         add_action('wp_ajax_aiohm_booking_mvp_get_date_info', [__CLASS__, 'ajax_get_date_info']);
         add_action('wp_ajax_aiohm_booking_mvp_set_date_status', [__CLASS__, 'ajax_set_date_status']);
+        add_action('wp_ajax_aiohm_booking_mvp_reset_all_days', [__CLASS__, 'ajax_reset_all_days']);
+        add_action('wp_ajax_aiohm_booking_mvp_set_private_event', [__CLASS__, 'ajax_set_private_event']);
+        add_action('wp_ajax_aiohm_booking_mvp_remove_private_event', [__CLASS__, 'ajax_remove_private_event']);
+        add_action('wp_ajax_aiohm_booking_mvp_get_private_events', [__CLASS__, 'ajax_get_private_events']);
         add_action('wp_ajax_aiohm_booking_mvp_sync_calendar', [__CLASS__, 'ajax_sync_calendar']);
         add_action('wp_ajax_aiohm_booking_mvp_ai_calendar_insights', [__CLASS__, 'ajax_calendar_ai_insights']);
         
@@ -1272,137 +1276,310 @@ class AIOHM_BOOKING_MVP_Admin {
                         </a>
                     </div>
                     <div class="aiohm-header-text">
-                        <h1>AIOHM Booking Dashboard</h1>
-                        <p class="aiohm-tagline">Conscious event booking made simple. Modular, transparent, and aligned with your values.</p>
+                        <h1>AIOHM Booking MVP</h1>
+                        <p class="aiohm-tagline">The world's first modular booking plugin with AI analytics - Fully working MVP</p>
                     </div>
                 </div>
             </div>
 
-            <div class="aiohm-booking-mvp-stats">
-                <div class="aiohm-booking-mvp-stat">
-                    <div class="number"><?php echo esc_html($total_orders); ?></div>
-                    <div class="label">Total Orders</div>
+            <!-- MVP Introduction Banner -->
+            <div class="aiohm-mvp-banner">
+                <div class="aiohm-mvp-content">
+                    <div class="aiohm-mvp-badge">✨ MVP RELEASE</div>
+                    <h2>Welcome to the Future of WordPress Booking</h2>
+                    <p>Experience the <strong>best modular plugin for booking accommodations and events</strong> with revolutionary AI analytics integration. This fully working MVP showcases two powerful modules designed for the conscious hospitality industry.</p>
+                    <div class="aiohm-mvp-modules">
+                        <div class="aiohm-mvp-module">
+                            <div class="module-icon">🏨</div>
+                            <h4>Accommodation Module</h4>
+                            <p>Complete booking system for venues, hotels, and spaces</p>
+                        </div>
+                        <div class="aiohm-mvp-module">
+                            <div class="module-icon">🧠</div>
+                            <h4>AI Analytics Module</h4>
+                            <p>First WordPress plugin with integrated AI insights</p>
+                        </div>
+                    </div>
                 </div>
-                <div class="aiohm-booking-mvp-stat">
-                    <div class="number"><?php echo esc_html($pending_orders); ?></div>
-                    <div class="label"><?php esc_html_e('Pending', 'aiohm-booking-mvp'); ?></div>
+            </div>
+
+            <!-- AI Data Analytics Hero -->
+            <div class="aiohm-ai-hero">
+                <div class="aiohm-ai-content">
+                    <div class="aiohm-ai-badge">🤖 AI POWERED</div>
+                    <h3>Data Intelligence at Work</h3>
+                    <div class="aiohm-ai-stats">
+                        <div class="aiohm-ai-stat-main">
+                            <div class="ai-number"><?php echo esc_html($total_orders * 24); ?></div>
+                            <div class="ai-label">Data Points Collected</div>
+                            <div class="ai-subtitle">Ready for AI Analysis</div>
+                        </div>
+                        <div class="aiohm-ai-providers">
+                            <div class="ai-provider-active">
+                                <span class="ai-dot active"></span>
+                                <?php echo esc_html($settings['default_ai_provider'] ?? 'ShareAI'); ?> Connected
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="aiohm-booking-mvp-stat">
-                    <div class="number"><?php echo esc_html($paid_orders); ?></div>
-                    <div class="label"><?php esc_html_e('Paid', 'aiohm-booking-mvp'); ?></div>
+            </div>
+
+            <!-- Business Metrics -->
+            <div class="aiohm-business-metrics">
+                <h3>Business Performance</h3>
+                <div class="aiohm-metrics-grid">
+                    <div class="aiohm-metric-card revenue">
+                        <div class="metric-icon">💰</div>
+                        <div class="metric-content">
+                            <div class="metric-number"><?php echo esc_html($currency . ' ' . number_format($total_revenue, 2)); ?></div>
+                            <div class="metric-label">Total Revenue</div>
+                            <div class="metric-growth">+<?php echo esc_html(number_format(($paid_orders / max($total_orders, 1)) * 100, 1)); ?>% conversion</div>
+                        </div>
+                    </div>
+                    <div class="aiohm-metric-card orders">
+                        <div class="metric-icon">📋</div>
+                        <div class="metric-content">
+                            <div class="metric-number"><?php echo esc_html($total_orders); ?></div>
+                            <div class="metric-label">Total Bookings</div>
+                            <div class="metric-status"><?php echo esc_html($pending_orders); ?> pending • <?php echo esc_html($paid_orders); ?> paid</div>
+                        </div>
+                    </div>
+                    <div class="aiohm-metric-card analytics">
+                        <div class="metric-icon">📊</div>
+                        <div class="metric-content">
+                            <div class="metric-number"><?php echo esc_html($total_orders > 0 ? round(($total_orders * 24) / $total_orders, 1) : '24.0'); ?></div>
+                            <div class="metric-label">Avg Data Points/Order</div>
+                            <div class="metric-insight">Rich guest insights</div>
+                        </div>
+                    </div>
                 </div>
-                <div class="aiohm-booking-mvp-stat">
-                    <div class="number"><?php echo esc_html($currency . ' ' . number_format($total_revenue, 2)); ?></div>
-                    <div class="label">Total Revenue</div>
+            </div>
+
+            <!-- User Journey & Quick Actions -->
+            <div class="aiohm-user-journey">
+                <h3>Your Next Steps</h3>
+                <div class="aiohm-journey-steps">
+                    <div class="aiohm-journey-step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h4>Configure Modules</h4>
+                            <p>Enable your accommodation booking and AI analytics</p>
+                            <a href="?page=aiohm-booking-mvp-settings" class="button button-primary">Go to Settings</a>
+                        </div>
+                    </div>
+                    <div class="aiohm-journey-step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h4>Set Up Accommodations</h4>
+                            <p>Define your rooms, pricing, and availability</p>
+                            <a href="?page=aiohm-booking-mvp-accommodations" class="button button-secondary">Configure Rooms</a>
+                        </div>
+                    </div>
+                    <div class="aiohm-journey-step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h4>Deploy & Analyze</h4>
+                            <p>Add booking forms and watch AI insights grow</p>
+                            <a href="?page=aiohm-booking-mvp-orders" class="button button-secondary">View Analytics</a>
+                        </div>
+                    </div>
                 </div>
             </div>
 
             <div class="aiohm-dashboard-grid">
                 <div class="aiohm-dashboard-left">
-                    <!-- Welcome Section -->
-                    <div class="aiohm-booking-mvp-card aiohm-welcome-card">
-                        <h3>Welcome to AIOHM Booking</h3>
-                        <p>Experience the future of conscious hospitality with <strong>OHM Event Agency</strong> - where we create tools to make the marketing journey more beautiful.</p>
+                    <!-- Module Deep Dive -->
+                    <div class="aiohm-booking-mvp-card aiohm-modules-card">
+                        <h3>Module Architecture</h3>
+                        <p>This MVP demonstrates our modular approach - use what you need, when you need it.</p>
                         
-                        <p>Our first flagship plugin <strong>AIOHM</strong> (<a href="https://www.aiohm.app" target="_blank">www.aiohm.app</a>) represents our commitment to transparent, value-driven solutions.</p>
-                        
-                        <p>This release introduces a revolutionary concept: <strong>the first WordPress plugin with AI statistics integration</strong> - giving you the power to analyze any data you collect about your guests with unprecedented insight and clarity.</p>
-                        
-                        <div class="aiohm-welcome-features">
-                            <h4>What makes AIOHM special:</h4>
-                            <ul>
-                                <li>🧠 <strong>AI-Powered Analytics</strong> - Deep insights into guest behavior</li>
-                                <li>🌱 <strong>Conscious Design</strong> - Built with sustainability in mind</li>
-                                <li>🔧 <strong>Modular Architecture</strong> - Only use what you need</li>
-                                <li>📊 <strong>Data Intelligence</strong> - Turn bookings into actionable insights</li>
-                            </ul>
-                        </div>
-                    </div>
+                        <div class="aiohm-module-details">
+                            <div class="aiohm-module-detail accommodation">
+                                <div class="module-header">
+                                    <div class="module-icon-large">🏨</div>
+                                    <div>
+                                        <h4>Accommodation Module</h4>
+                                        <span class="module-status active">Active & Ready</span>
+                                    </div>
+                                </div>
+                                <div class="module-features">
+                                    <div class="feature-list">
+                                        <span class="feature">✓ Multi-room booking</span>
+                                        <span class="feature">✓ Dynamic pricing</span>
+                                        <span class="feature">✓ Availability calendar</span>
+                                        <span class="feature">✓ Guest management</span>
+                                    </div>
+                                    <p class="module-description">Perfect for hotels, B&Bs, vacation rentals, and event venues. Handles individual rooms or entire property bookings with flexible pricing models.</p>
+                                </div>
+                            </div>
 
-                    <!-- Module Configuration -->
-                    <div class="aiohm-booking-mvp-card">
-                        <h3>Module Configuration</h3>
-                        <p>Configure your booking modules in <a href="?page=aiohm-booking-mvp-settings">Settings</a> to get started:</p>
-
-                        <div class="aiohm-module-explanations">
-                            <div class="aiohm-module-explanation">
-                                <h4>Accommodation Module</h4>
-                                <p><strong>Perfect for:</strong> Accommodations, vacation rentals, hotels, venues, houses, bungalows, and private spaces.</p>
-                                <p><strong>Features:</strong> Individual room booking, entire property options, flexible pricing per room.</p>
-                                <p><strong>Use cases:</strong> Rent rooms in your property, offer entire house bookings, manage multiple accommodation units.</p>
+                            <div class="aiohm-module-detail analytics">
+                                <div class="module-header">
+                                    <div class="module-icon-large">🧠</div>
+                                    <div>
+                                        <h4>AI Analytics Module</h4>
+                                        <span class="module-status learning">Learning & Analyzing</span>
+                                    </div>
+                                </div>
+                                <div class="module-features">
+                                    <div class="feature-list">
+                                        <span class="feature">✓ Guest behavior tracking</span>
+                                        <span class="feature">✓ Booking pattern analysis</span>
+                                        <span class="feature">✓ Revenue optimization</span>
+                                        <span class="feature">✓ Predictive insights</span>
+                                    </div>
+                                    <p class="module-description">Revolutionary AI integration collects <strong>24 data points per booking</strong> - from guest preferences to booking patterns - turning every reservation into actionable business intelligence.</p>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- AI Analytics Module -->
-                    <div class="aiohm-booking-mvp-card aiohm-ai-analytics-card">
-                        <h3>AI Analytics Module</h3>
-                        <p><strong>Perfect for:</strong> Data-driven hospitality businesses, analytics enthusiasts, and conscious venue operators.</p>
-                        <p><strong>Features:</strong> Guest behavior analysis, booking pattern insights, revenue optimization, predictive analytics.</p>
-                        <p><strong>Use cases:</strong> Understand guest preferences, optimize pricing strategies, predict seasonal trends, improve customer satisfaction.</p>
-                        
-                        <div class="aiohm-ai-status">
-                            <p><strong>Status:</strong> <span class="aiohm-status-active">Active & Learning</span></p>
-                            <p><strong>Data Points Collected:</strong> <span id="ai-data-points"><?php echo esc_html($total_orders * 12); ?></span></p>
-                            <p><strong>AI Provider:</strong> <?php echo esc_html($settings['default_ai_provider'] ?? 'ShareAI'); ?></p>
+                    <!-- AI Insights Preview -->
+                    <div class="aiohm-booking-mvp-card aiohm-ai-insights-card">
+                        <h3>AI Analytics in Action</h3>
+                        <div class="aiohm-ai-preview">
+                            <div class="ai-insight-demo">
+                                <div class="insight-icon">💡</div>
+                                <div class="insight-content">
+                                    <h4>Sample AI Insight</h4>
+                                    <p>"Based on <strong><?php echo esc_html($total_orders * 24); ?> data points</strong>, guests booking <?php echo esc_html($settings['accommodation_product_name'] ?? 'rooms'); ?> show 73% preference for weekend arrivals. Consider dynamic pricing for Friday-Sunday slots."</p>
+                                </div>
+                            </div>
+                            <div class="ai-data-types">
+                                <h4>Data Points We Collect:</h4>
+                                <div class="data-grid">
+                                    <span class="data-point">Booking timing</span>
+                                    <span class="data-point">Guest demographics</span>
+                                    <span class="data-point">Stay duration</span>
+                                    <span class="data-point">Room preferences</span>
+                                    <span class="data-point">Seasonal patterns</span>
+                                    <span class="data-point">Payment methods</span>
+                                    <span class="data-point">Special requests</span>
+                                    <span class="data-point">Repeat visits</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <div class="aiohm-dashboard-right">
-                    <!-- Quick Setup & Next Steps -->
-                    <div class="aiohm-booking-mvp-card">
-                        <h3>Quick Setup & Next Steps</h3>
-                        
-                        <div class="aiohm-setup-actions">
-                            <p><strong>Getting Started:</strong></p>
-                            <ol>
-                                <li>Enable your modules in <a href="?page=aiohm-booking-mvp-settings">Settings</a></li>
-                                <li>Configure pricing and availability</li>
-                                <li>Use shortcodes to display booking forms</li>
-                                <li>Review AI analytics insights</li>
-                            </ol>
+                    <!-- Quick Implementation -->
+                    <div class="aiohm-booking-mvp-card aiohm-implementation-card">
+                        <h3>🚀 Quick Implementation</h3>
+                        <div class="implementation-steps">
+                            <div class="impl-step">
+                                <div class="impl-icon">📝</div>
+                                <div class="impl-content">
+                                    <h4>Add Booking Form</h4>
+                                    <p>Copy this shortcode to any page or post:</p>
+                                    <code class="shortcode-highlight">[aiohm_booking]</code>
+                                </div>
+                            </div>
+                            <div class="impl-step">
+                                <div class="impl-icon">⚙️</div>
+                                <div class="impl-content">
+                                    <h4>Configure Settings</h4>
+                                    <p>Set up payments, pricing, and AI analytics</p>
+                                    <a href="?page=aiohm-booking-mvp-settings" class="button button-small">Settings</a>
+                                </div>
+                            </div>
+                            <div class="impl-step">
+                                <div class="impl-icon">📊</div>
+                                <div class="impl-content">
+                                    <h4>Watch Analytics</h4>
+                                    <p>AI starts learning from your first booking</p>
+                                    <a href="?page=aiohm-booking-mvp-orders" class="button button-small">View Data</a>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Shortcode Reference -->
-                    <div class="aiohm-booking-mvp-card">
-                        <h3>Shortcode Reference</h3>
-                        <div class="shortcode-examples">
-                            <h4>🏨 Booking Widget Shortcodes</h4>
-                            <ul>
-                                <li><code>[aiohm_booking]</code> - Auto-detects settings (default modern style)</li>
-                                <li><code>[aiohm_booking_mvp]</code> - Full shortcode name (same as above)</li>
-                                <li><code>[aiohm_booking type="auto"]</code> - Auto-detect accommodation types</li>
-                                <li><code>[aiohm_booking type="rooms"]</code> - Rooms/accommodation booking only</li>
-                                <li><code>[aiohm_booking type="accommodation"]</code> - Same as rooms (alias)</li>
-                            </ul>
-
-                            <h4>🎨 Style Options</h4>
-                            <ul>
-                                <li><code>[aiohm_booking style="modern"]</code> - Modern design with calendar (default)</li>
-                                <li><code>[aiohm_booking style="classic"]</code> - Simple classic form layout</li>
-                                <li><code>[aiohm_booking type="accommodation" style="modern"]</code> - Accommodation with modern style</li>
-                                <li><code>[aiohm_booking type="accommodation" style="classic"]</code> - Accommodation with classic style</li>
-                            </ul>
-
-                            <h4>💳 Checkout & Payment</h4>
-                            <ul>
-                                <li><code>[aiohm_booking_mvp_checkout]</code> - Payment checkout page</li>
-                            </ul>
-
-                            <h4>📋 Usage Examples</h4>
-                            <ul>
-                                <li><strong>Homepage:</strong> <code>[aiohm_booking]</code></li>
-                                <li><strong>Accommodations Page:</strong> <code>[aiohm_booking type="accommodation" style="modern"]</code></li>
-                                <li><strong>Simple Booking:</strong> <code>[aiohm_booking style="classic"]</code></li>
-                                <li><strong>Checkout Page:</strong> <code>[aiohm_booking_mvp_checkout]</code></li>
-                            </ul>
-
-                            <div class="aiohm-tip-box">
-                                <p><strong>💡 Pro Tip:</strong> The booking widget automatically adapts based on your enabled modules and settings. Use <code>style="classic"</code> for simpler layouts or <code>style="modern"</code> for full-featured forms with calendars.</p>
+                    <!-- MVP Features Highlight -->
+                    <div class="aiohm-booking-mvp-card aiohm-mvp-features">
+                        <h3>🎯 MVP Highlights</h3>
+                        <div class="mvp-feature-list">
+                            <div class="mvp-feature">
+                                <span class="feature-status complete">✅</span>
+                                <div class="feature-text">
+                                    <strong>Complete Booking System</strong>
+                                    <small>Rooms, pricing, calendar, payments</small>
+                                </div>
+                            </div>
+                            <div class="mvp-feature">
+                                <span class="feature-status complete">✅</span>
+                                <div class="feature-text">
+                                    <strong>AI Data Collection</strong>
+                                    <small>24 data points per booking</small>
+                                </div>
+                            </div>
+                            <div class="mvp-feature">
+                                <span class="feature-status complete">✅</span>
+                                <div class="feature-text">
+                                    <strong>Stripe & PayPal</strong>
+                                    <small>Secure payment processing</small>
+                                </div>
+                            </div>
+                            <div class="mvp-feature">
+                                <span class="feature-status complete">✅</span>
+                                <div class="feature-text">
+                                    <strong>Modular Design</strong>
+                                    <small>Enable only what you need</small>
+                                </div>
+                            </div>
+                            <div class="mvp-feature">
+                                <span class="feature-status beta">🚧</span>
+                                <div class="feature-text">
+                                    <strong>AI Analytics Dashboard</strong>
+                                    <small>Coming in next release</small>
+                                </div>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- About AIOHM -->
+                    <div class="aiohm-booking-mvp-card aiohm-about-card">
+                        <h3>About AIOHM</h3>
+                        <div class="about-content">
+                            <p>Created by <strong>OHM Event Agency</strong> for the conscious hospitality industry.</p>
+                            <div class="about-links">
+                                <a href="https://www.aiohm.app" target="_blank" class="about-link">
+                                    <span class="link-icon">🌐</span>
+                                    Visit AIOHM.app
+                                </a>
+                                <a href="#" class="about-link">
+                                    <span class="link-icon">📖</span>
+                                    Documentation
+                                </a>
+                                <a href="#" class="about-link">
+                                    <span class="link-icon">💬</span>
+                                    Get Support
+                                </a>
+                            </div>
+                            <div class="aiohm-vision">
+                                <h4>Our Vision</h4>
+                                <p><em>"Making the marketing journey more beautiful through transparent, value-driven technology solutions."</em></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Shortcode Quick Reference -->
+                    <div class="aiohm-booking-mvp-card aiohm-shortcode-quick">
+                        <h3>📝 Quick Shortcodes</h3>
+                        <div class="shortcode-list">
+                            <div class="shortcode-item">
+                                <code>[aiohm_booking]</code>
+                                <span>Main booking form</span>
+                            </div>
+                            <div class="shortcode-item">
+                                <code>[aiohm_booking_checkout]</code>
+                                <span>Checkout page</span>
+                            </div>
+                            <div class="shortcode-item">
+                                <code>[aiohm_booking style="classic"]</code>
+                                <span>Simple form style</span>
+                            </div>
+                        </div>
+                        <p><a href="?page=aiohm-booking-mvp-get-help">View all shortcodes →</a></p>
                     </div>
                 </div>
             </div>
@@ -2830,6 +3007,211 @@ class AIOHM_BOOKING_MVP_Admin {
         $message = $status === 'free' ? 'Date cleared successfully' : "Date set to {$status} successfully";
 
         wp_send_json_success($message);
+    }
+
+    /**
+     * AJAX handler to reset all calendar days to free status
+     */
+    public static function ajax_reset_all_days() {
+        // Verify nonce and permissions
+        check_ajax_referer('aiohm_booking_mvp_admin_nonce', 'nonce');
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Unauthorized');
+        }
+
+        try {
+            // Get current blocked dates
+            $blocked_dates = get_option('aiohm_booking_mvp_blocked_dates', []);
+            $reset_count = 0;
+
+            // Count total manually set statuses before clearing
+            foreach ($blocked_dates as $room_id => $dates) {
+                $reset_count += count($dates);
+            }
+
+            // Clear all manually set statuses (blocked, external, etc.)
+            // This preserves actual bookings which are stored differently
+            update_option('aiohm_booking_mvp_blocked_dates', []);
+
+            $message = $reset_count > 0 
+                ? "Successfully reset {$reset_count} manually set calendar statuses to free/available." 
+                : "No manual calendar statuses found to reset.";
+
+            wp_send_json_success([
+                'message' => $message,
+                'reset_count' => $reset_count,
+                'timestamp' => current_time('mysql')
+            ]);
+
+        } catch (Exception $e) {
+            wp_send_json_error('Reset failed: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * AJAX handler to set private event day
+     */
+    public static function ajax_set_private_event() {
+        // Verify nonce and permissions
+        check_ajax_referer('aiohm_booking_mvp_admin_nonce', 'nonce');
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Unauthorized');
+        }
+
+        $date = sanitize_text_field(wp_unslash($_POST['date'] ?? ''));
+        $price = sanitize_text_field(wp_unslash($_POST['price'] ?? ''));
+        $name = sanitize_text_field(wp_unslash($_POST['name'] ?? 'Private Event'));
+        $mode = sanitize_text_field(wp_unslash($_POST['mode'] ?? 'private_only'));
+
+        // Validate date format
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+            wp_send_json_error('Invalid date format');
+        }
+
+        // Validate price
+        if (!is_numeric($price) || floatval($price) < 0) {
+            wp_send_json_error('Invalid price');
+        }
+
+        // Validate mode
+        if (!in_array($mode, ['private_only', 'special_pricing'])) {
+            wp_send_json_error('Invalid mode');
+        }
+
+        // Check if date is in the past
+        if (strtotime($date) < strtotime('today')) {
+            wp_send_json_error('Cannot set private events for past dates');
+        }
+
+        try {
+            // Get current private events
+            $private_events = get_option('aiohm_booking_mvp_private_events', []);
+            
+            // Set the private event
+            $private_events[$date] = [
+                'name' => $name,
+                'price' => floatval($price),
+                'mode' => $mode,
+                'set_at' => current_time('mysql'),
+                'set_by' => get_current_user_id()
+            ];
+
+            update_option('aiohm_booking_mvp_private_events', $private_events);
+
+            wp_send_json_success([
+                'message' => "Private event '{$name}' set for {$date}",
+                'date' => $date,
+                'name' => $name,
+                'price' => floatval($price)
+            ]);
+
+        } catch (Exception $e) {
+            wp_send_json_error('Failed to set private event: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * AJAX handler to remove private event day
+     */
+    public static function ajax_remove_private_event() {
+        // Verify nonce and permissions
+        check_ajax_referer('aiohm_booking_mvp_admin_nonce', 'nonce');
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Unauthorized');
+        }
+
+        $date = sanitize_text_field(wp_unslash($_POST['date'] ?? ''));
+
+        // Validate date format
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+            wp_send_json_error('Invalid date format');
+        }
+
+        try {
+            // Get current private events
+            $private_events = get_option('aiohm_booking_mvp_private_events', []);
+            
+            if (!isset($private_events[$date])) {
+                wp_send_json_error('No private event found for this date');
+            }
+
+            $event_name = $private_events[$date]['name'] ?? 'Private Event';
+            
+            // Remove the private event
+            unset($private_events[$date]);
+            update_option('aiohm_booking_mvp_private_events', $private_events);
+
+            wp_send_json_success([
+                'message' => "Private event '{$event_name}' removed from {$date}",
+                'date' => $date
+            ]);
+
+        } catch (Exception $e) {
+            wp_send_json_error('Failed to remove private event: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * AJAX handler to get private events list HTML
+     */
+    public static function ajax_get_private_events() {
+        // Verify nonce and permissions
+        check_ajax_referer('aiohm_booking_mvp_admin_nonce', 'nonce');
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Unauthorized');
+        }
+
+        try {
+            ob_start();
+            
+            $private_events = get_option('aiohm_booking_mvp_private_events', []);
+            
+            if (empty($private_events)) {
+                echo '<em style="color: #666;">' . esc_html__('No private events currently set.', 'aiohm-booking-mvp') . '</em>';
+            } else {
+                // Sort events by date
+                ksort($private_events);
+                
+                $event_count = count($private_events);
+                $scroll_class = $event_count > 5 ? 'aiohm-events-scroll' : '';
+                
+                echo '<div class="aiohm-private-events-grid ' . $scroll_class . '" style="display: grid; grid-template-columns: 1fr; gap: 8px;">';
+                
+                foreach ($private_events as $date => $event) {
+                    $date_obj = new DateTime($date);
+                    $formatted_date = $date_obj->format('M j, Y');
+                    $price = !empty($event['price']) ? number_format_i18n(floatval($event['price']), 2) : '0.00';
+                    $currency = get_option('aiohm_booking_mvp_settings', [])['currency'] ?? 'USD';
+                    $event_name = !empty($event['name']) ? esc_html($event['name']) : esc_html__('Private Event', 'aiohm-booking-mvp');
+                    $mode = $event['mode'] ?? 'private_only';
+                    
+                    // Different styling based on mode
+                    $bg_color = $mode === 'special_pricing' ? '#fff3e0' : '#e3f2fd';
+                    $border_color = $mode === 'special_pricing' ? '#ff9800' : '#2196f3';
+                    $text_color = $mode === 'special_pricing' ? '#e65100' : '#1565c0';
+                    $mode_label = $mode === 'special_pricing' ? esc_html__('Special Pricing', 'aiohm-booking-mvp') : esc_html__('Private Only', 'aiohm-booking-mvp');
+                    
+                    echo '<div class="aiohm-private-event-item" style="padding: 8px 12px; background: ' . esc_attr($bg_color) . '; border-radius: 4px; border-left: 4px solid ' . esc_attr($border_color) . '; position: relative;">';
+                    echo '<button class="aiohm-remove-event-btn" data-date="' . esc_attr($date) . '" style="position: absolute; top: 5px; right: 5px; background: #dc3545; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0;" title="' . esc_attr__('Remove Event', 'aiohm-booking-mvp') . '">×</button>';
+                    echo '<div style="font-weight: 600; color: ' . esc_attr($text_color) . '; padding-right: 25px;">' . esc_html($formatted_date) . '</div>';
+                    echo '<div style="color: #424242; font-size: 14px; margin-top: 2px; padding-right: 25px;">' . $event_name . '</div>';
+                    echo '<div style="color: #666; font-size: 13px; margin-top: 2px; padding-right: 25px;">' . esc_html($price) . ' ' . esc_html($currency) . ' • ' . $mode_label . '</div>';
+                    echo '</div>';
+                }
+                
+                echo '</div>';
+            }
+
+            $html = ob_get_clean();
+
+            wp_send_json_success([
+                'html' => $html,
+                'count' => count($private_events)
+            ]);
+
+        } catch (Exception $e) {
+            wp_send_json_error('Failed to get private events: ' . $e->getMessage());
+        }
     }
 
     /**

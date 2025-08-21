@@ -535,6 +535,9 @@ jQuery(document).ready(function($) {
     function initializeFilterSystem() {
         $(CALENDAR_CONFIG.SELECTORS.searchButton).on('click', handleFilterSearch);
         $(CALENDAR_CONFIG.SELECTORS.resetButton).on('click', handleFilterReset);
+        $('#aiohm-calendar-reset-all-days-btn').on('click', handleResetAllDays);
+        $('#aiohm-set-private-event-btn').on('click', handleSetPrivateEvent);
+        $(document).on('click', '.aiohm-remove-event-btn', handleRemovePrivateEventDirect);
     }
 
     /**
@@ -563,6 +566,233 @@ jQuery(document).ready(function($) {
         applyCalendarStatusFilter('');
 
         setTimeout(() => resetButtonState(button, originalText), 500);
+    }
+
+    /**
+     * Handle reset all days button click
+     */
+    function handleResetAllDays() {
+        if (!confirm('Are you sure you want to reset all calendar days to free/available status? This will remove all manual status settings (blocked, external, etc.) but will not affect actual bookings.')) {
+            return;
+        }
+
+        const button = $('#aiohm-calendar-reset-all-days-btn');
+        const originalText = button.text();
+        
+        setButtonLoadingState(button, 'Resetting...');
+
+        $.ajax({
+            url: aiohm_booking_mvp_admin.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'aiohm_booking_mvp_reset_all_days',
+                nonce: aiohm_booking_mvp_admin.nonce
+            },
+            success: (response) => handleResetAllDaysSuccess(response, button, originalText),
+            error: () => handleResetAllDaysError(button, originalText)
+        });
+    }
+
+    /**
+     * Handle successful reset all days response
+     */
+    function handleResetAllDaysSuccess(response, button, originalText) {
+        try {
+            const data = typeof response === 'string' ? JSON.parse(response) : response;
+
+            if (data.success) {
+                button.text('Reset Complete!');
+                setTimeout(() => {
+                    resetButtonState(button, originalText);
+                    location.reload(); // Reload to show updated calendar
+                }, 1500);
+            } else {
+                alert('Reset failed: ' + (data.data || 'Unknown error'));
+                resetButtonState(button, originalText);
+            }
+        } catch (error) {
+            alert('Error processing response: ' + error.message);
+            resetButtonState(button, originalText);
+        }
+    }
+
+    /**
+     * Handle reset all days error
+     */
+    function handleResetAllDaysError(button, originalText) {
+        alert('Failed to reset calendar days. Please try again.');
+        resetButtonState(button, originalText);
+    }
+
+    /**
+     * Handle set private event button click
+     */
+    function handleSetPrivateEvent() {
+        const date = $('#aiohm-special-event-date').val();
+        const price = $('#aiohm-special-event-price').val();
+        const name = $('#aiohm-special-event-name').val().trim();
+        const mode = $('input[name="aiohm-event-mode"]:checked').val();
+
+        if (!date) {
+            alert('Please select a date for the private event.');
+            return;
+        }
+
+        if (!price || parseFloat(price) < 0) {
+            alert('Please enter a valid price for the private event.');
+            return;
+        }
+
+        const eventName = name || (mode === 'special_pricing' ? 'Special Pricing' : 'Private Event');
+        const modeDescription = mode === 'special_pricing' 
+            ? 'This will allow individual room bookings at the special price.'
+            : 'This will block all individual room bookings for this date and only allow full property bookings.';
+        const confirmMessage = `Set ${date} as ${mode === 'special_pricing' ? 'special pricing' : 'private event'} day?\n\nEvent: ${eventName}\nPrice: ${price}\n\n${modeDescription}`;
+
+        if (!confirm(confirmMessage)) {
+            return;
+        }
+
+        const button = $('#aiohm-set-private-event-btn');
+        const originalText = button.text();
+        
+        setButtonLoadingState(button, 'Setting Event...');
+
+        $.ajax({
+            url: aiohm_booking_mvp_admin.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'aiohm_booking_mvp_set_private_event',
+                date: date,
+                price: price,
+                name: eventName,
+                mode: mode,
+                nonce: aiohm_booking_mvp_admin.nonce
+            },
+            success: (response) => handleSetPrivateEventSuccess(response, button, originalText),
+            error: () => handleSetPrivateEventError(button, originalText)
+        });
+    }
+
+    /**
+     * Handle successful set private event response
+     */
+    function handleSetPrivateEventSuccess(response, button, originalText) {
+        try {
+            const data = typeof response === 'string' ? JSON.parse(response) : response;
+
+            if (data.success) {
+                button.text('Event Set!');
+                
+                // Clear form
+                $('#aiohm-special-event-date').val('');
+                $('#aiohm-special-event-price').val('');
+                $('#aiohm-special-event-name').val('');
+                $('#aiohm-event-mode-private').prop('checked', true);
+                
+                // Refresh private events list
+                refreshPrivateEventsList();
+                
+                setTimeout(() => {
+                    resetButtonState(button, originalText);
+                    location.reload(); // Reload to show updated calendar
+                }, 1500);
+            } else {
+                alert('Failed to set private event: ' + (data.data || 'Unknown error'));
+                resetButtonState(button, originalText);
+            }
+        } catch (error) {
+            alert('Error processing response: ' + error.message);
+            resetButtonState(button, originalText);
+        }
+    }
+
+    /**
+     * Handle set private event error
+     */
+    function handleSetPrivateEventError(button, originalText) {
+        alert('Failed to set private event. Please try again.');
+        resetButtonState(button, originalText);
+    }
+
+    /**
+     * Handle direct remove private event button click (X button on each event)
+     */
+    function handleRemovePrivateEventDirect() {
+        const button = $(this);
+        const date = button.data('date');
+
+        if (!confirm(`Remove private event for ${date}?\n\nThis will restore normal booking availability for all rooms on this date.`)) {
+            return;
+        }
+
+        // Disable button and show loading state
+        const originalContent = button.html();
+        button.prop('disabled', true).html('...');
+
+        $.ajax({
+            url: aiohm_booking_mvp_admin.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'aiohm_booking_mvp_remove_private_event',
+                date: date,
+                nonce: aiohm_booking_mvp_admin.nonce
+            },
+            success: (response) => {
+                try {
+                    const data = typeof response === 'string' ? JSON.parse(response) : response;
+
+                    if (data.success) {
+                        // Refresh private events list
+                        refreshPrivateEventsList();
+                        
+                        setTimeout(() => {
+                            location.reload(); // Reload to show updated calendar
+                        }, 500);
+                    } else {
+                        alert('Failed to remove private event: ' + (data.data || 'Unknown error'));
+                        button.prop('disabled', false).html(originalContent);
+                    }
+                } catch (error) {
+                    alert('Error processing response: ' + error.message);
+                    button.prop('disabled', false).html(originalContent);
+                }
+            },
+            error: () => {
+                alert('Failed to remove private event. Please try again.');
+                button.prop('disabled', false).html(originalContent);
+            }
+        });
+    }
+
+    /**
+     * Refresh the private events list display
+     */
+    function refreshPrivateEventsList() {
+        $.ajax({
+            url: aiohm_booking_mvp_admin.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'aiohm_booking_mvp_get_private_events',
+                nonce: aiohm_booking_mvp_admin.nonce
+            },
+            success: (response) => {
+                try {
+                    const data = typeof response === 'string' ? JSON.parse(response) : response;
+                    if (data.success && data.data.html) {
+                        $('#aiohm-private-events-list').html(data.data.html);
+                        
+                        // Update the event count badge
+                        const countElement = document.getElementById('aiohm-events-count');
+                        if (countElement && data.data.count !== undefined) {
+                            countElement.textContent = data.data.count;
+                        }
+                    }
+                } catch (error) {
+                    // Silent error - list will be refreshed on page reload
+                }
+            }
+        });
     }
 
     /**
