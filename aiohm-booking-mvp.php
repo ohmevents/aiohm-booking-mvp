@@ -29,19 +29,25 @@ define('AIOHM_BOOKING_MVP_FILE', __FILE__);
 define('AIOHM_BOOKING_MVP_DIR', plugin_dir_path(__FILE__));
 define('AIOHM_BOOKING_MVP_URL', plugin_dir_url(__FILE__));
 
-require_once AIOHM_BOOKING_MVP_DIR.'includes/aiohm-booking-mvp-helpers.php';
-require_once AIOHM_BOOKING_MVP_DIR.'includes/aiohm-booking-mvp-activator.php';
-require_once AIOHM_BOOKING_MVP_DIR.'includes/aiohm-booking-mvp-events.php';
-require_once AIOHM_BOOKING_MVP_DIR.'includes/aiohm-booking-mvp-api.php';
-require_once AIOHM_BOOKING_MVP_DIR.'includes/aiohm-booking-mvp-shortcodes.php';
-require_once AIOHM_BOOKING_MVP_DIR.'includes/aiohm-booking-mvp-admin.php';
-require_once AIOHM_BOOKING_MVP_DIR.'includes/aiohm-booking-mvp-calendar.php';
-require_once AIOHM_BOOKING_MVP_DIR.'includes/aiohm-booking-mvp-ai-client.php';
-require_once AIOHM_BOOKING_MVP_DIR.'includes/aiohm-booking-mvp-security.php';
-require_once AIOHM_BOOKING_MVP_DIR.'includes/aiohm-booking-mvp-cron.php';
+// Load Composer autoloader
+require_once AIOHM_BOOKING_MVP_DIR . 'vendor/autoload.php';
 
-register_activation_hook(__FILE__, ['AIOHM_BOOKING_MVP_Activator','activate']);
-register_deactivation_hook(__FILE__, ['AIOHM_BOOKING_MVP_Activator','deactivate']);
+// Load helper functions (non-class functions)
+require_once AIOHM_BOOKING_MVP_DIR.'includes/aiohm-booking-mvp-helpers.php';
+
+// Load old admin class for complete functionality (coexists with namespaced version)
+require_once AIOHM_BOOKING_MVP_DIR.'includes/aiohm-booking-mvp-admin.php';
+
+// Use namespaced classes
+use AIOHM\BookingMVP\Core\Activator;
+use AIOHM\BookingMVP\Events\Events;
+use AIOHM\BookingMVP\API\API;
+use AIOHM\BookingMVP\Shortcodes\Shortcodes;
+use AIOHM\BookingMVP\Admin\Admin;
+use AIOHM\BookingMVP\Security\Security;
+
+register_activation_hook(__FILE__, [Activator::class, 'activate']);
+register_deactivation_hook(__FILE__, [Activator::class, 'deactivate']);
 
 /**
  * Initialize plugin components
@@ -81,12 +87,8 @@ class AIOHM_Booking_MVP {
             add_filter('plugin_locale', array($this, 'set_plugin_locale'), 10, 2);
         }
         
-        // Load plugin textdomain
-        load_plugin_textdomain(
-            'aiohm-booking-mvp',
-            false,
-            dirname(plugin_basename(__FILE__)) . '/languages/'
-        );
+        // WordPress automatically loads plugin textdomains since 4.6
+        // The textdomain is loaded from the /languages/ directory automatically
     }
     
     /**
@@ -104,11 +106,16 @@ class AIOHM_Booking_MVP {
     }
 
     public function init_components() {
-        AIOHM_BOOKING_MVP_Events::init();
-        AIOHM_BOOKING_MVP_API::init();
-        AIOHM_BOOKING_MVP_Shortcodes::init();
-        AIOHM_BOOKING_MVP_Admin::init();
-        AIOHM_BOOKING_MVP_Security::init();
+        Events::init();
+        API::init();
+        Shortcodes::init();
+        Admin::init();
+        Security::init();
+        
+        // Initialize old admin class for AJAX handlers and form processing (coexists with namespaced Admin)
+        if (class_exists('AIOHM_BOOKING_MVP_Admin')) {
+            \AIOHM_BOOKING_MVP_Admin::init();
+        }
     }
 }
 

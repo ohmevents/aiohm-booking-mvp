@@ -2,7 +2,9 @@
  * AIOHM Booking MVP Calendar - Professional Calendar Management System
  * Handles calendar cell interactions, status management, and filtering functionality
  */
-jQuery(document).ready(function($) {
+import $ from 'jquery';
+
+$(function() {
 
     // Calendar Configuration Constants
     const CALENDAR_CONFIG = {
@@ -174,8 +176,26 @@ jQuery(document).ready(function($) {
      * Check if cell has booking but is not blocked
      */
     function hasBookingButNotBlocked(cellElement) {
-        return cellElement.hasClass('aiohm-date-room-locked') &&
-               !cellElement.hasClass('aiohm-date-blocked');
+        // Only consider it a real booking if it has actual booking indicators
+        // (check-in/check-out dates or booking links), not just admin-set statuses
+        const hasRoomLocked = cellElement.hasClass('aiohm-date-room-locked');
+        const hasCheckInOut = cellElement.hasClass('aiohm-date-check-in') ||
+                              cellElement.hasClass('aiohm-date-check-out');
+        const hasBookingLinks = cellElement.find('a.aiohm-booking-link, a.aiohm-silent-link-to-booking').length > 0;
+        const isNotBlocked = !cellElement.hasClass('aiohm-date-blocked');
+        
+        // Admin-set statuses (external, pending, booked) without actual booking data should be clearable
+        const hasAdminStatus = cellElement.hasClass('aiohm-date-external') ||
+                              cellElement.hasClass('aiohm-date-pending') ||
+                              (cellElement.hasClass('aiohm-date-booked') && !hasCheckInOut && !hasBookingLinks);
+        
+        // If it's an admin-set status without real booking data, don't treat as active booking
+        if (hasAdminStatus && !hasCheckInOut && !hasBookingLinks) {
+            return false;
+        }
+        
+        // Must have room locked AND either check-in/out dates OR booking links to be a real booking
+        return hasRoomLocked && isNotBlocked && (hasCheckInOut || hasBookingLinks);
     }
 
     /**
@@ -302,7 +322,7 @@ jQuery(document).ready(function($) {
      * Handle status clear button click
      */
     function handleStatusClear(menuElement, roomId, date) {
-        updateDateStatus(roomId, date, 'free', aiohm_booking_mvp_admin.i18n.clearStatus, menuElement);
+        updateDateStatus(roomId, date, 'free', aiohm_booking_mvp_admin.i18n.clearStatus, '', menuElement);
     }
 
     /**
@@ -1081,13 +1101,11 @@ jQuery(document).ready(function($) {
         const dateHead = $('.aiohm-bookings-date-table thead tr');
         if (!roomHead.length || !dateHead.length) return;
 
-        // Reset before measuring
-        roomHead.css('height', '');
-        dateHead.css('height', '');
-
-        const h = Math.max(roomHead.outerHeight(), dateHead.outerHeight());
-        roomHead.css('height', h + 'px');
-        dateHead.css('height', h + 'px');
+        // Use CSS-defined fixed heights (52px) - don't override with JS
+        // CSS handles the alignment automatically with strict height constraints
+        // Just ensure both tables are visible and rendered
+        roomHead.css('visibility', 'visible');
+        dateHead.css('visibility', 'visible');
     }
 
     function alignBodyRowHeights() {
@@ -1095,18 +1113,13 @@ jQuery(document).ready(function($) {
         const dateRows = $('.aiohm-bookings-date-table tbody tr');
         if (!roomRows.length || !dateRows.length) return;
 
-        // Reset heights before measuring
-        roomRows.css('height', '');
-        dateRows.css('height', '');
-
-        const count = Math.min(roomRows.length, dateRows.length);
-        for (let i = 0; i < count; i++) {
-            const rr = $(roomRows[i]);
-            const dr = $(dateRows[i]);
-            const h = Math.max(rr.outerHeight(), dr.outerHeight());
-            rr.css('height', h + 'px');
-            dr.css('height', h + 'px');
-        }
+        // Use CSS-defined fixed heights (40px) - don't fight against CSS
+        // CSS handles row height synchronization automatically with:
+        // - height: 40px; min-height: 40px; max-height: 40px;
+        // - box-sizing: border-box;
+        // Just ensure visibility and let CSS do the alignment
+        roomRows.css('visibility', 'visible');
+        dateRows.css('visibility', 'visible');
     }
 
     function debounce(fn, wait) {

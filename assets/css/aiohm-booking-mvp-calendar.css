@@ -37,8 +37,9 @@
     border: 1px solid var(--ohm-light-accent);
     border-radius: var(--ohm-radius);
     box-shadow: var(--ohm-shadow-sm);
-    overflow: hidden;
+    overflow: visible; /* Allow menus to appear outside wrapper */
     container-type: inline-size;
+    position: relative; /* Create stacking context for z-index */
 }
 
 /* Calendar Filters */
@@ -388,14 +389,72 @@
     }
 }
 
-/* Calendar Tables Layout */
+/* Calendar Tables Layout - Synchronized Row Heights */
 .aiohm-booking-calendar-tables-wrapper {
     display: flex;
     background: white;
     min-height: 400px;
+    align-items: stretch; /* Ensure both tables stretch to same height */
 }
 
-/* Rooms Table */
+/* Force table height synchronization */
+.aiohm-bookings-calendar-rooms,
+.aiohm-bookings-date-table {
+    height: auto;
+}
+
+/* Specific table layout settings */
+.aiohm-bookings-date-table {
+    table-layout: fixed; /* Fixed layout for consistent date column widths */
+}
+
+/* Ensure row heights are strictly controlled */
+.aiohm-bookings-calendar-rooms tr,
+.aiohm-bookings-date-table tr {
+    display: table-row;
+    height: auto;
+}
+
+/* Header rows - exactly 52px */
+.aiohm-bookings-calendar-rooms thead tr,
+.aiohm-bookings-date-table thead tr {
+    height: 52px;
+    min-height: 52px;
+    max-height: 52px;
+}
+
+/* Body rows - exactly 40px */
+.aiohm-bookings-calendar-rooms tbody tr,
+.aiohm-bookings-date-table tbody tr {
+    height: 40px;
+    min-height: 40px;
+    max-height: 40px;
+}
+
+/* Final alignment enforcement - ensure both tables align perfectly */
+.aiohm-bookings-calendar-rooms thead,
+.aiohm-bookings-date-table thead {
+    display: table-header-group;
+}
+
+.aiohm-bookings-calendar-rooms tbody,
+.aiohm-bookings-date-table tbody {
+    display: table-row-group;
+}
+
+/* Cross-browser consistency for table cell alignment */
+.aiohm-bookings-calendar-rooms th,
+.aiohm-bookings-calendar-rooms td,
+.aiohm-bookings-date-table th,
+.aiohm-bookings-date-table td {
+    border-collapse: separate;
+    border-spacing: 0;
+    display: table-cell;
+    overflow: visible; /* Allow menu to appear outside cell boundaries */
+    pointer-events: auto; /* Ensure cells can receive clicks */
+}
+
+/* Rooms Table - Aligned with Date Table */
 .aiohm-bookings-calendar-rooms {
     width: 180px;
     flex-shrink: 0;
@@ -412,8 +471,12 @@
     text-align: left;
     font-size: 13px;
     font-family: var(--ohm-font-secondary);
-    height: 40px;
+    height: 40px; /* Match date table row height exactly */
+    min-height: 40px; /* Ensure minimum height */
+    max-height: 40px; /* Prevent height expansion */
     vertical-align: middle;
+    box-sizing: border-box; /* Include padding in height calculation */
+    line-height: 1.2; /* Control line height for text alignment */
 }
 
 .aiohm-bookings-calendar-rooms th {
@@ -423,7 +486,9 @@
     font-family: var(--ohm-font-primary);
     border-bottom: 1px solid #e5e5e5;
     padding: 10px 12px;
+    height: 52px; /* Match date table header height exactly */
     min-height: 52px;
+    max-height: 52px;
 }
 
 .aiohm-bookings-calendar-rooms tbody tr {
@@ -449,7 +514,9 @@
 /* Calendar Holder */
 .aiohm-bookings-calendar-holder {
     flex: 1;
-    overflow-x: auto;
+    overflow-x: auto; /* Keep horizontal scroll for dates */
+    overflow-y: visible; /* Allow menus to appear above/below */
+    position: relative; /* Create stacking context */
 }
 
 /* Dates Table */
@@ -459,7 +526,9 @@
     border-collapse: separate;
     border-spacing: 0;
     table-layout: fixed;
+    min-width: 800px; /* Ensure minimum width for proper date column sizing */
 }
+
 
 .aiohm-bookings-date-table th {
     background: #f5f5f5;
@@ -474,7 +543,11 @@
     width: 80px;
     min-width: 80px;
     position: relative;
+    height: 52px; /* Match room table header height exactly */
     min-height: 52px;
+    max-height: 52px;
+    box-sizing: border-box;
+    vertical-align: middle;
 }
 
 .aiohm-bookings-date-table th:last-child {
@@ -506,17 +579,20 @@
     margin-top: 1px;
 }
 
-/* Date Cells */
+/* Date Cells - Aligned with Room Table */
 .aiohm-bookings-date-table td {
     padding: 0;
     margin: 0;
     border-right: 1px solid #e5e5e5;
     border-bottom: 1px solid #e5e5e5;
-    height: 40px;
+    height: 40px; /* Match room table row height exactly */
+    min-height: 40px;
+    max-height: 40px;
     width: 80px;
     min-width: 80px;
     position: relative;
     vertical-align: middle;
+    box-sizing: border-box;
 }
 
 .aiohm-bookings-date-table td:last-child {
@@ -538,6 +614,22 @@
     font-size: 11px;
     transition: var(--ohm-transition);
     will-change: background-color, border-color;
+    cursor: pointer; /* Ensure cells are clickable */
+    z-index: 1; /* Ensure cells are above table constraints */
+}
+
+/* Ensure clickable calendar cells remain interactive */
+.aiohm-date-first-part,
+.aiohm-date-second-part {
+    position: relative;
+    cursor: pointer;
+    z-index: 1; /* Above table layout constraints */
+}
+
+.aiohm-editable-cell:hover {
+    transform: scale(1.02); /* Subtle hover feedback */
+    transition: transform 0.1s ease;
+    z-index: 2; /* Bring hovered cells to front */
 }
 
 /* Today highlighting */
@@ -641,6 +733,9 @@
     padding: 10px;
     min-width: 240px;
     display: none;
+    z-index: 10001; /* Above calendar table constraints and popups */
+    max-height: none !important; /* Override any height constraints */
+    overflow: visible; /* Ensure menu content is visible */
 }
 
 .aiohm-simple-menu .aiohm-menu-header {
@@ -806,6 +901,7 @@
     }
 }
 
+/* Container-based responsive design (modern browsers) */
 @container (max-width: 48rem) {
     .aiohm-booking-calendar-tables-wrapper {
         flex-direction: column;
@@ -887,7 +983,9 @@
         }
     }
 
+    /* Fallback media query for older browsers that don't support @container */
     @media (max-width: 768px) {
+        /* Only include rules not covered by @container queries above */
         .aiohm-booking-calendar-tables-wrapper {
             flex-direction: column;
         }
@@ -896,17 +994,6 @@
             width: 100%;
             border-right: none;
             border-bottom: 1px solid #ddd;
-        }
-
-        .aiohm-filter-group {
-            flex-wrap: wrap;
-            gap: var(--ohm-spacing-sm);
-        }
-
-        .aiohm-calendar-legend {
-            justify-content: center;
-            flex-wrap: wrap;
-            gap: 10px;
         }
 
         .legend-item {

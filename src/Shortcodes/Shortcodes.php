@@ -1,16 +1,42 @@
 <?php
+
+namespace AIOHM\BookingMVP\Shortcodes;
+
 if ( ! defined('ABSPATH') ) { exit; }
 
+/**
+ * AIOHM Booking MVP Shortcodes Handler
+ *
+ * Manages all shortcodes for the booking system including the main
+ * booking widget and checkout forms with proper asset management.
+ *
+ * @package AIOHM\BookingMVP\Shortcodes
+ * @since   1.0.0
+ */
 // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery
 // phpcs:disable WordPress.DB.DirectDatabaseQuery.NoCaching
 // Reason: This class accesses custom booking tables for shortcode data display
-class AIOHM_BOOKING_MVP_Shortcodes {
+class Shortcodes {
+    
+    /**
+     * Initialize shortcodes and assets
+     *
+     * @since 1.0.0
+     * @return void
+     */
     public static function init(){
         add_shortcode('aiohm_booking_mvp',[__CLASS__,'sc_widget']);
         add_shortcode('aiohm_booking',[__CLASS__,'sc_widget']); // Shorter alias
         add_shortcode('aiohm_booking_mvp_checkout',[__CLASS__,'sc_checkout']);
         add_action('wp_enqueue_scripts',[__CLASS__,'assets']);
     }
+    
+    /**
+     * Enqueue frontend assets
+     *
+     * @since 1.0.0
+     * @return void
+     */
     public static function assets(){
         wp_register_style('aiohm-booking-mvp', aiohm_booking_mvp_asset_url('css/aiohm-booking-mvp-style.css'),[],AIOHM_BOOKING_MVP_VERSION);
         wp_enqueue_style('aiohm-booking-mvp');
@@ -69,6 +95,14 @@ class AIOHM_BOOKING_MVP_Shortcodes {
         ]);
         wp_enqueue_script('aiohm-booking-mvp');
     }
+    
+    /**
+     * Main booking widget shortcode
+     *
+     * @since 1.0.0
+     * @param array $atts Shortcode attributes
+     * @return string Rendered widget HTML
+     */
     public static function sc_widget($atts=[]){
         $atts = shortcode_atts([
             'type' => 'auto', // auto, rooms, accommodation
@@ -107,6 +141,14 @@ class AIOHM_BOOKING_MVP_Shortcodes {
         }
         return ob_get_clean();
     }
+    
+    /**
+     * Checkout shortcode for payment processing
+     *
+     * @since 1.0.0
+     * @param array $atts Shortcode attributes
+     * @return string Rendered checkout HTML
+     */
     public static function sc_checkout($atts=[]){
         // Enqueue checkout specific assets
         wp_enqueue_style(

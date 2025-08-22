@@ -1,11 +1,14 @@
 <?php
+
+namespace AIOHM\BookingMVP\Calendar;
+
 /**
  * AIOHM Booking Calendar Class
  *
  * Professional calendar management system for booking and room availability visualization.
  * Handles different period types, room management, and booking data integration.
  *
- * @package AIOHM_Booking
+ * @package AIOHM\BookingMVP\Calendar
  * @since   1.0.0
  */
 
@@ -21,7 +24,7 @@ if (!defined('ABSPATH')) { exit; }
 // phpcs:disable WordPress.DB.DirectDatabaseQuery.NoCaching
 // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 // Reason: This class manages custom booking tables and requires direct database access for calendar operations
-class AIOHM_BOOKING_MVP_Calendar {
+class Calendar {
 
     // Calendar Configuration Constants
     const ALL_ROOM_TYPES = '0';
@@ -73,8 +76,8 @@ class AIOHM_BOOKING_MVP_Calendar {
             'room_type_id' => self::ALL_ROOM_TYPES,
             'period_type' => self::PERIOD_TYPE_CUSTOM,
             'period_page' => 0,
-            'custom_period_from' => new DateTime('today'),
-            'custom_period_to' => new DateTime('+' . self::DEFAULT_PERIOD_DAYS . ' days'),
+            'custom_period_from' => new \DateTime('today'),
+            'custom_period_to' => new \DateTime('+' . self::DEFAULT_PERIOD_DAYS . ' days'),
         );
     }
 
@@ -132,7 +135,7 @@ class AIOHM_BOOKING_MVP_Calendar {
      * Create quarter period for calendar display
      *
      * @param int $quarter_page Quarter navigation offset
-     * @return DatePeriod Quarter period object
+     * @return \DatePeriod Quarter period object
      */
     private function createQuarterPeriod($quarter_page = 0) {
         $current_quarter = ceil(current_time('n') / 3);
@@ -143,8 +146,8 @@ class AIOHM_BOOKING_MVP_Calendar {
         $first_month = ($quarter - 1) * 3 + 1;
         $last_month = $quarter * 3;
 
-        $first_day = new DateTime($year . '-' . sprintf('%02d', $first_month) . '-01');
-        $last_day = new DateTime($year . '-' . sprintf('%02d', $last_month) . '-01');
+        $first_day = new \DateTime($year . '-' . sprintf('%02d', $first_month) . '-01');
+        $last_day = new \DateTime($year . '-' . sprintf('%02d', $last_month) . '-01');
         $last_day->modify('last day of this month');
 
         return $this->createDatePeriod($first_day, $last_day, true);
@@ -154,13 +157,13 @@ class AIOHM_BOOKING_MVP_Calendar {
      * Create year period for calendar display
      *
      * @param int $year_page Year navigation offset
-     * @return DatePeriod Year period object
+     * @return \DatePeriod Year period object
      */
     private function createYearPeriod($year_page = 0) {
         $current_year = current_time('Y');
         $target_year = $current_year + $year_page;
-        $first_day = new DateTime('first day of January ' . $target_year);
-        $last_day = new DateTime('last day of December ' . $target_year);
+        $first_day = new \DateTime('first day of January ' . $target_year);
+        $last_day = new \DateTime('last day of December ' . $target_year);
 
         return $this->createDatePeriod($first_day, $last_day, true);
     }
@@ -168,7 +171,7 @@ class AIOHM_BOOKING_MVP_Calendar {
     /**
      * Create custom period for calendar display
      *
-     * @return DatePeriod Custom period object
+     * @return \DatePeriod Custom period object
      */
     private function createCustomPeriod() {
         $start_date = $this->custom_period_from;
@@ -186,10 +189,10 @@ class AIOHM_BOOKING_MVP_Calendar {
      * Create month period for calendar display
      *
      * @param int $month_page Month navigation offset
-     * @return DatePeriod Month period object
+     * @return \DatePeriod Month period object
      */
     private function createMonthPeriod($month_page = 0) {
-        $base_date = new DateTime('first day of this month');
+        $base_date = new \DateTime('first day of this month');
         $direction = $month_page < 0 ? '-' : '+';
 
         $first_day = clone $base_date;
@@ -204,21 +207,21 @@ class AIOHM_BOOKING_MVP_Calendar {
     /**
      * Create date period with optional end date inclusion
      *
-     * @param DateTime $start_date Period start date
-     * @param DateTime $end_date Period end date
+     * @param \DateTime $start_date Period start date
+     * @param \DateTime $end_date Period end date
      * @param bool $include_end Whether to include end date
-     * @return DatePeriod Configured date period
+     * @return \DatePeriod Configured date period
      */
     private function createDatePeriod($start_date, $end_date, $include_end = false) {
-        $interval = new DateInterval('P1D');
+        $interval = new \DateInterval('P1D');
 
         if ($include_end) {
             $end_date_extended = clone $end_date;
             $end_date_extended->modify('+1 day');
-            return new DatePeriod($start_date, $interval, $end_date_extended);
+            return new \DatePeriod($start_date, $interval, $end_date_extended);
         }
 
-        return new DatePeriod($start_date, $interval, $end_date);
+        return new \DatePeriod($start_date, $interval, $end_date);
     }
 
     /**
@@ -245,10 +248,10 @@ class AIOHM_BOOKING_MVP_Calendar {
      * @param int $room_number Room number identifier
      * @param array $accommodation_details Custom accommodation configuration
      * @param array $product_names Product naming configuration
-     * @return stdClass Room data object
+     * @return \stdClass Room data object
      */
     private function createRoomData($room_number, $accommodation_details, $product_names) {
-        $room = new stdClass();
+        $room = new \stdClass();
         $room->ID = $room_number;
 
         $accommodation_index = $room_number - 1;
@@ -317,8 +320,8 @@ class AIOHM_BOOKING_MVP_Calendar {
             return;
         }
 
-        $check_in_date = new DateTime($order->check_in_date);
-        $check_out_date = new DateTime($order->check_out_date);
+        $check_in_date = new \DateTime($order->check_in_date);
+        $check_out_date = new \DateTime($order->check_out_date);
         $assigned_rooms = $this->determineRoomAssignments($order, $explicit_assignments);
 
         foreach ($assigned_rooms as $room_id) {
@@ -367,8 +370,8 @@ class AIOHM_BOOKING_MVP_Calendar {
      * Assign booking order to specific room
      *
      * @param int $room_id Room identifier
-     * @param DateTime $check_in Check-in date
-     * @param DateTime $check_out Check-out date
+     * @param \DateTime $check_in Check-in date
+     * @param \DateTime $check_out Check-out date
      * @param object $order Booking order data
      */
     private function assignOrderToRoom($room_id, $check_in, $check_out, $order) {
@@ -376,7 +379,7 @@ class AIOHM_BOOKING_MVP_Calendar {
             $this->booking_data[$room_id] = array();
         }
 
-        $booking_period = new DatePeriod($check_in, new DateInterval('P1D'), $check_out);
+        $booking_period = new \DatePeriod($check_in, new \DateInterval('P1D'), $check_out);
 
         foreach ($booking_period as $date) {
             $date_key = $date->format('Y-m-d');
@@ -417,7 +420,7 @@ class AIOHM_BOOKING_MVP_Calendar {
      * Mark check-out date in booking data
      *
      * @param int $room_id Room identifier
-     * @param DateTime $check_out Check-out date
+     * @param \DateTime $check_out Check-out date
      * @param object $order Booking order data
      */
     private function markCheckOutDate($room_id, $check_out, $order) {
@@ -442,7 +445,7 @@ class AIOHM_BOOKING_MVP_Calendar {
      * Get comprehensive room date details including admin status
      *
      * @param int $room_id Room identifier
-     * @param DateTime $date Target date
+     * @param \DateTime $date Target date
      * @return array Complete date details
      */
     private function getRoomDateDetails($room_id, $date) {
@@ -581,7 +584,7 @@ class AIOHM_BOOKING_MVP_Calendar {
         if (!empty($_GET['custom_period_from'])) {
             // phpcs:ignore WordPress.Security.NonceVerification.Recommended
             $date_string = sanitize_text_field(wp_unslash($_GET['custom_period_from']));
-            $custom_from = DateTime::createFromFormat('Y-m-d', $date_string);
+            $custom_from = \DateTime::createFromFormat('Y-m-d', $date_string);
             if ($custom_from !== false && $custom_from->format('Y-m-d') === $date_string) {
                 $attributes['custom_period_from'] = $custom_from;
             }
@@ -592,7 +595,7 @@ class AIOHM_BOOKING_MVP_Calendar {
         if (!empty($_GET['custom_period_to'])) {
             // phpcs:ignore WordPress.Security.NonceVerification.Recommended
             $date_string = sanitize_text_field(wp_unslash($_GET['custom_period_to']));
-            $custom_to = DateTime::createFromFormat('Y-m-d', $date_string);
+            $custom_to = \DateTime::createFromFormat('Y-m-d', $date_string);
             if ($custom_to !== false && $custom_to->format('Y-m-d') === $date_string) {
                 $attributes['custom_period_to'] = $custom_to;
             }
@@ -979,12 +982,13 @@ class AIOHM_BOOKING_MVP_Calendar {
      * Render individual calendar cell (two half-day cells)
      *
      * @param int $room_id Room identifier
-     * @param DateTime $date Cell date
+     * @param \DateTime $date Cell date
      */
     private function renderCalendarCell($room_id, $date) {
         $cell_classes = $this->calculateCellClasses($room_id, $date);
         $cell_content = $this->generateCellContent($room_id, $date);
         $cell_titles = $this->generateCellTitles($room_id, $date);
+        $date_details = $this->getRoomDateDetails($room_id, $date);
         $custom_price = $date_details['custom_price'] ?? '';
 
         $edit_attributes = '';
@@ -1019,7 +1023,7 @@ class AIOHM_BOOKING_MVP_Calendar {
      * Calculate CSS classes for calendar cell
      *
      * @param int $room_id Room identifier
-     * @param DateTime $date Cell date
+     * @param \DateTime $date Cell date
      * @return array Cell classes for first and second parts
      */
     private function calculateCellClasses($room_id, $date) {
@@ -1047,7 +1051,7 @@ class AIOHM_BOOKING_MVP_Calendar {
      * Get previous day details for carry-over logic
      *
      * @param int $room_id Room identifier
-     * @param DateTime $date Current date
+     * @param \DateTime $date Current date
      * @return array Previous day details
      */
     private function getPreviousDayDetails($room_id, $date) {
@@ -1198,7 +1202,7 @@ class AIOHM_BOOKING_MVP_Calendar {
      * Generate cell content (links, booking IDs, etc.)
      *
      * @param int $room_id Room identifier
-     * @param DateTime $date Cell date
+     * @param \DateTime $date Cell date
      * @return array Cell content for first and second parts
      */
     private function generateCellContent($room_id, $date) {
@@ -1226,7 +1230,7 @@ class AIOHM_BOOKING_MVP_Calendar {
      * Generate cell titles for hover information
      *
      * @param int $room_id Room identifier
-     * @param DateTime $date Cell date
+     * @param \DateTime $date Cell date
      * @return array Cell titles for first and second parts
      */
     private function generateCellTitles($room_id, $date) {
@@ -1452,7 +1456,7 @@ class AIOHM_BOOKING_MVP_Calendar {
         echo '<div class="aiohm-private-events-grid ' . esc_attr($scroll_class) . '" style="display: grid; grid-template-columns: 1fr; gap: 8px;">';
         
         foreach ($private_events as $date => $event) {
-            $date_obj = new DateTime($date);
+            $date_obj = new \DateTime($date);
             $formatted_date = $date_obj->format('M j, Y');
             $price = !empty($event['price']) ? number_format_i18n(floatval($event['price']), 2) : '0.00';
             $currency = get_option('aiohm_booking_mvp_settings', [])['currency'] ?? 'USD';

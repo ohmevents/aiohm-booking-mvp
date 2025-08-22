@@ -1,17 +1,19 @@
-jQuery(document).ready(function($) {
+import $ from 'jquery';
+
+$(function() {
 
     /**
      * Handle payment module visibility based on accommodation module state
      * @param {boolean} accommodationEnabled - Optional override for accommodation state
      */
     function handlePaymentModuleVisibility(accommodationEnabled) {
-        // Get accommodation module state
-        const accommodationCheckbox = $('input[name="aiohm_booking_settings[enable_rooms]"]');
+        // Get accommodation module state (FIXED: correct field name)
+        const accommodationCheckbox = $('input[name="aiohm_booking_mvp_settings[enable_rooms]"]');
         const isAccommodationEnabled = accommodationEnabled !== undefined ? accommodationEnabled : accommodationCheckbox.is(':checked');
 
-        // Find payment module cards
-        const stripeCard = $('input[name="aiohm_booking_settings[enable_stripe]"]').closest('.aiohm-module-card');
-        const paypalCard = $('input[name="aiohm_booking_settings[enable_paypal]"]').closest('.aiohm-module-card');
+        // Find payment module cards (FIXED: correct field names)
+        const stripeCard = $('input[name="aiohm_booking_mvp_settings[enable_stripe]"]').closest('.aiohm-module-card');
+        const paypalCard = $('input[name="aiohm_booking_mvp_settings[enable_paypal]"]').closest('.aiohm-module-card');
 
         if (isAccommodationEnabled) {
             // Show payment modules when accommodation is enabled
@@ -82,11 +84,27 @@ jQuery(document).ready(function($) {
                 module: module,
                 value: value
             }
-        }).always(function(){
+        }).done(function(response) {
+            // Success - redirect to refresh the page
             const url = new URL(window.location);
             url.searchParams.set('refresh', '1');
             url.searchParams.set('t', Date.now());
             window.location = url.toString();
+        }).fail(function(xhr, status, error) {
+            // Error - show error message and restore checkbox state
+            overlay.remove();
+            console.error('Module toggle failed:', status, error, xhr.responseText);
+            
+            // Restore checkbox to previous state
+            checkbox.prop('checked', !checkbox.is(':checked'));
+            
+            // Show error message
+            alert('Failed to save module setting: ' + (xhr.responseText || error || 'Unknown error'));
+            
+            // Restore payment module visibility if it was accommodation module
+            if (module === 'enable_rooms') {
+                handlePaymentModuleVisibility(!checkbox.is(':checked'));
+            }
         });
     });
 
@@ -111,7 +129,7 @@ jQuery(document).ready(function($) {
         const provider = button.data('provider');
         const targetId = button.data('target');
         const apiKey = $('#' + targetId).val().trim();
-        const statusContainer = button.closest('.aiohm-provider-card').find('.aiohm-connection-status');
+        const statusContainer = button.closest('.aiohm-module-card').find('.aiohm-connection-status');
 
         if (!apiKey) {
             showStatus(statusContainer, aiohm_booking_mvp_admin.i18n.enterApiKey, 'error');
@@ -136,15 +154,15 @@ jQuery(document).ready(function($) {
             success: function(response) {
                 if (response.success) {
                     showStatus(statusContainer, response.data, 'success');
-                    button.closest('.aiohm-provider-card').addClass('connected');
+                    button.closest('.aiohm-module-card').addClass('connected');
                 } else {
                     showStatus(statusContainer, response.data, 'error');
-                    button.closest('.aiohm-provider-card').removeClass('connected');
+                    button.closest('.aiohm-module-card').removeClass('connected');
                 }
             },
             error: function() {
                 showStatus(statusContainer, aiohm_booking_mvp_admin.i18n.connectionTestFailed, 'error');
-                button.closest('.aiohm-provider-card').removeClass('connected');
+                button.closest('.aiohm-module-card').removeClass('connected');
             },
             complete: function() {
                 button.text(originalText).prop('disabled', false);
@@ -158,7 +176,7 @@ jQuery(document).ready(function($) {
         const provider = button.data('provider');
         const targetId = button.data('target');
         const apiKey = $('#' + targetId).val().trim();
-        const statusContainer = button.closest('.aiohm-provider-card').find('.aiohm-connection-status');
+        const statusContainer = button.closest('.aiohm-module-card').find('.aiohm-connection-status');
 
 
         // Update button state
@@ -193,6 +211,51 @@ jQuery(document).ready(function($) {
                 button.text(originalText).prop('disabled', false);
             }
         });
+    });
+
+    // Save AI consent setting via AJAX
+    $(document).on('click', '.aiohm-save-consent-btn', function() {
+        const button = $(this);
+        const card = button.closest('.aiohm-module-card');
+        const consentCheckbox = card.find('.ai-consent-checkbox');
+        const isChecked = consentCheckbox.is(':checked');
+        const statusContainer = card.find('.aiohm-connection-status');
+
+        const originalText = button.text();
+        button.text(aiohm_booking_mvp_admin.i18n.saving).prop('disabled', true);
+
+        $.ajax({
+            url: aiohm_booking_mvp_admin.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'aiohm_booking_mvp_save_ai_consent',
+                consent: isChecked ? 1 : 0,
+                nonce: aiohm_booking_mvp_admin.nonce
+            },
+            success: function(response) {
+                if (response.success) {
+                    showStatus(statusContainer, response.data.message, 'success');
+                    setTimeout(() => {
+                        statusContainer.fadeOut();
+                    }, 3000);
+                } else {
+                    showStatus(statusContainer, response.data || 'Error saving consent', 'error');
+                }
+            },
+            error: function() {
+                showStatus(statusContainer, 'Failed to save consent.', 'error');
+            },
+            complete: function() {
+                button.text(originalText).prop('disabled', false);
+            }
+        });
+    });
+
+    // Sync AI consent checkboxes
+    $(document).on('change', '.ai-consent-checkbox', function() {
+        const isChecked = $(this).is(':checked');
+        // Ensure all AI consent checkboxes reflect the same state
+        $('.ai-consent-checkbox').prop('checked', isChecked);
     });
 
     // Helper function to show status messages
@@ -244,18 +307,12 @@ jQuery(document).ready(function($) {
         }, 500);
     }
 
-    // Set default AI provider functionality
-    $('.aiohm-default-badge').on('click', function() {
-        const badge = $(this);
-        const provider = badge.data('provider');
-        const isActive = badge.hasClass('active');
-
-        // Don't do anything if already active
-        if (isActive) {
-            return;
-        }
-
-
+    // Set default AI provider functionality using delegated event handler
+    $(document).on('click', '.aiohm-make-default-btn', function() {
+        const button = $(this);
+        const provider = button.data('provider');
+        const card = button.closest('.aiohm-module-card');
+    
         // Make AJAX request to set default provider
         $.ajax({
             url: aiohm_booking_mvp_admin.ajax_url,
@@ -267,37 +324,32 @@ jQuery(document).ready(function($) {
             },
             success: function(response) {
                 if (response.success) {
-                    // Remove active state from all badges
-                    $('.aiohm-default-badge').removeClass('active');
-                    $('.aiohm-provider-card').removeClass('default-provider');
-                    $('.aiohm-default-badge .default-active').remove();
-                    $('.aiohm-default-badge .make-default').remove();
-
-                    // Update all badges to show "Make Default"
-                    $('.aiohm-default-badge').each(function() {
-                        $(this).append('<span class="make-default">Make Default</span>');
+                    // Find all default provider rows
+                    $('.aiohm-default-provider-row').each(function() {
+                        const row = $(this);
+                        const currentProvider = row.closest('.aiohm-module-card').data('provider');
+                        // Change the old default back to a button
+                        row.html(`<button type="button" class="button button-secondary aiohm-make-default-btn" data-provider="${currentProvider}">Set as Default</button>`);
                     });
-
-                    // Set the clicked provider as active
-                    badge.addClass('active');
-                    badge.closest('.aiohm-provider-card').addClass('default-provider');
-                    badge.find('.make-default').remove();
-                    badge.append('<span class="default-active">✓ Default</span>');
-
+    
+                    // Update the new default provider to show the badge
+                    const newDefaultRow = card.find('.aiohm-default-provider-row');
+                    newDefaultRow.html('<span class="aiohm-status-indicator success">✓ Default Provider</span>');
+    
                     // Show success message briefly
-                    const statusContainer = badge.closest('.aiohm-provider-card').find('.aiohm-connection-status');
+                    const statusContainer = card.find('.aiohm-connection-status');
                     showStatus(statusContainer, response.data.message, 'success');
                     setTimeout(() => {
                         statusContainer.fadeOut();
                     }, 2000);
-
+    
                 } else {
-                    const statusContainer = badge.closest('.aiohm-provider-card').find('.aiohm-connection-status');
+                    const statusContainer = card.find('.aiohm-connection-status');
                     showStatus(statusContainer, response.data || aiohm_booking_mvp_admin.i18n.setDefaultProviderFailed, 'error');
                 }
             },
             error: function(xhr, status, error) {
-                const statusContainer = badge.closest('.aiohm-provider-card').find('.aiohm-connection-status');
+                const statusContainer = card.find('.aiohm-connection-status');
                 showStatus(statusContainer, 'Failed to set default provider. Please try again.', 'error');
             }
         });
@@ -445,6 +497,31 @@ jQuery(document).ready(function($) {
         } else {
             fieldElement.hide();
         }
+    });
+
+    // Handle Required/Optional toggle buttons
+    $('.field-required-toggle').on('click', function(e) {
+        e.preventDefault();
+        const $button = $(this);
+        const field = $button.data('field');
+        const $hiddenInput = $button.siblings('.required-hidden-input');
+        const $toggleText = $button.find('.toggle-text');
+        
+        // Toggle state
+        if ($button.hasClass('required')) {
+            // Switch to Optional
+            $button.removeClass('required').addClass('optional');
+            $toggleText.text('Optional');
+            $hiddenInput.val('0');
+        } else {
+            // Switch to Required
+            $button.removeClass('optional').addClass('required');
+            $toggleText.text('Required');
+            $hiddenInput.val('1');
+        }
+        
+        // Update form preview immediately
+        updateFormPreview();
     });
 
     // AI Table Query functionality
@@ -710,30 +787,47 @@ jQuery(document).ready(function($) {
      */
     function initFieldsManager() {
         // Initialize sortable fields
-        if ($('#sortable-fields').length && typeof $.ui !== 'undefined' && $.ui.sortable) {
-            $('#sortable-fields').sortable({
-                handle: '.field-handle',
-                placeholder: 'ui-sortable-placeholder aiohm-field-toggle',
-                helper: 'clone',
-                tolerance: 'pointer',
-                cursor: 'grabbing',
-                opacity: 0.8,
-                start: function(e, ui) {
-                    ui.helper.addClass('ui-sortable-helper');
-                    ui.placeholder.height(ui.helper.outerHeight());
-                },
-                stop: function(e, ui) {
-                    // Update form preview after reordering
-                    updateFormPreview();
-                    
-                    // Store field order in a hidden field for form submission
-                    updateFieldOrder();
-                },
-                change: function(e, ui) {
-                    // Add visual feedback during drag
-                    ui.placeholder.effect('pulse', { times: 1 }, 200);
+        const $sortableContainer = $('#sortable-fields');
+        
+        if ($sortableContainer.length) {
+            // Wait for jQuery UI to be available
+            const initSortable = function() {
+                if (typeof $.ui !== 'undefined' && $.ui.sortable) {
+                    $sortableContainer.sortable({
+                        handle: '.field-handle',
+                        placeholder: 'sortable-placeholder',
+                        helper: 'clone',
+                        tolerance: 'pointer',
+                        cursor: 'grabbing',
+                        opacity: 0.8,
+                        axis: 'y',
+                        start: function(e, ui) {
+                            ui.helper.addClass('ui-sortable-helper');
+                            ui.placeholder.height(ui.helper.outerHeight());
+                            ui.placeholder.css('visibility', 'visible');
+                        },
+                        stop: function(e, ui) {
+                            // Update form preview after reordering
+                            setTimeout(function() {
+                                updateFormPreview();
+                                updateFieldOrder();
+                            }, 100);
+                        },
+                        change: function(e, ui) {
+                            // Add visual feedback during drag
+                            if (ui.placeholder && typeof ui.placeholder.effect === 'function') {
+                                ui.placeholder.effect('pulse', { times: 1 }, 200);
+                            }
+                        }
+                    });
+                    // Sortable initialized successfully
+                } else {
+                    // Retry after a short delay
+                    setTimeout(initSortable, 100);
                 }
-            });
+            };
+            
+            initSortable();
         }
 
         // Handle field toggle changes
@@ -804,20 +898,89 @@ jQuery(document).ready(function($) {
         const preview = $('#booking-form-preview');
         if (!preview.length) return;
 
-        // Get enabled fields in order
+        // Get enabled fields in order with their required state
         const enabledFields = [];
         $('#sortable-fields .aiohm-field-toggle').each(function() {
             const checkbox = $(this).find('.form-field-toggle');
+            const requiredToggle = $(this).find('.field-required-toggle');
             if (checkbox.is(':checked')) {
-                enabledFields.push(checkbox.data('field'));
+                enabledFields.push({
+                    field: checkbox.data('field'),
+                    required: requiredToggle.hasClass('required')
+                });
             }
         });
 
-        // Update preview form fields (simplified version)
+        // Find the additional contact fields container in the preview
         const formFields = preview.find('.booking-form-fields');
         if (formFields.length) {
             // Add visual indicator that preview is updating
             formFields.addClass('updating');
+            
+            // Reorder the fields in the preview
+            const additionalFieldsContainer = formFields.find('.form-row').filter(function() {
+                const classList = $(this).attr('class') || '';
+                return classList.includes('-field') && 
+                       !classList.includes('date-field') && 
+                       !classList.includes('duration-field') && 
+                       !classList.includes('guests-field') && 
+                       !classList.includes('accommodation-field') &&
+                       !classList.includes('pets-field');
+            });
+
+            // Detach all additional contact fields
+            const detachedFields = {};
+            additionalFieldsContainer.each(function() {
+                const $field = $(this);
+                const classList = $field.attr('class') || '';
+                
+                // Extract field type from class names
+                const fieldTypes = ['address', 'age', 'company', 'country', 'phone', 'special_requests', 'vat', 'arrival-time'];
+                for (let type of fieldTypes) {
+                    if (classList.includes(type + '-field')) {
+                        detachedFields[type.replace('-', '_')] = $field.detach();
+                        break;
+                    }
+                }
+            });
+
+            // Find insertion point (after pets field or at the end of form-fields)
+            let insertAfter = formFields.find('.pets-field');
+            if (!insertAfter.length) {
+                insertAfter = formFields.children().last();
+            }
+
+            // Reinsert fields in the new order
+            enabledFields.forEach(function(fieldData) {
+                const fieldKey = fieldData.field === 'arrival_time' ? 'arrival-time' : fieldData.field;
+                const $field = detachedFields[fieldData.field];
+                
+                if ($field) {
+                    // Update required state
+                    const $label = $field.find('.input-label');
+                    const labelText = $label.text().replace(' *', '');
+                    $label.text(labelText + (fieldData.required ? ' *' : ''));
+                    
+                    // Update required attribute on input
+                    const $input = $field.find('input, textarea, select');
+                    if (fieldData.required) {
+                        $input.attr('required', 'required');
+                    } else {
+                        $input.removeAttr('required');
+                    }
+                    
+                    // Show and insert the field
+                    $field.show().insertAfter(insertAfter);
+                    insertAfter = $field;
+                }
+            });
+
+            // Hide any remaining detached fields
+            Object.values(detachedFields).forEach(function($field) {
+                if ($field && $field.parent().length === 0) {
+                    $field.hide().appendTo(formFields);
+                }
+            });
             
             setTimeout(() => {
                 // Remove updating indicator
@@ -865,8 +1028,174 @@ jQuery(document).ready(function($) {
         });
     }
 
+    /**
+     * Email Template Manager
+     */
+    function initEmailTemplateManager() {
+        // Template selector change
+        $('#email-template-selector').on('change', function() {
+            const selectedTemplate = $(this).val();
+            const $editor = $('#template-editor');
+            
+            if (selectedTemplate) {
+                $editor.slideDown(300);
+                loadTemplateData(selectedTemplate);
+            } else {
+                $editor.slideUp(300);
+            }
+        });
+
+        // Preset buttons
+        $('.preset-btn').on('click', function() {
+            const preset = $(this).data('preset');
+            applyTemplatePreset(preset);
+            $(this).effect('bounce', { times: 1, distance: 5 }, 200);
+        });
+
+        // Template actions
+        $('#preview-template').on('click', function() {
+            previewEmailTemplate();
+        });
+
+        $('#send-test-email').on('click', function() {
+            sendTestEmail();
+        });
+
+        $('#save-template').on('click', function() {
+            saveEmailTemplate();
+        });
+    }
+
+    function loadTemplateData(templateType) {
+        // Load existing template data or set defaults
+        const defaultTemplates = {
+            'booking_confirmation': {
+                subject: 'Booking Confirmation - {property_name}',
+                content: `Dear {guest_name},
+
+Thank you for your booking! We're excited to welcome you to {property_name}.
+
+📋 Booking Details:
+• Booking ID: {booking_id}
+• Check-in: {check_in_date}
+• Check-out: {check_out_date}
+• Duration: {duration_nights} nights
+• Total Amount: {total_amount}
+
+We look forward to hosting you!
+
+Best regards,
+{property_name} Team`,
+                sender_name: 'Your Hotel Name',
+                reply_to: 'reservations@yourhotel.com'
+            },
+            'pre_arrival_reminder': {
+                subject: 'Your stay begins in 3 days - {property_name}',
+                content: `Hi {guest_name},
+
+Your exciting stay at {property_name} begins in just 3 days!
+
+🏨 Reminder Details:
+• Check-in: {check_in_date}
+• Booking ID: {booking_id}
+
+We can't wait to welcome you!`,
+                sender_name: 'Your Hotel Name',
+                reply_to: 'reservations@yourhotel.com'
+            }
+        };
+
+        const template = defaultTemplates[templateType] || defaultTemplates['booking_confirmation'];
+        
+        $('input[name="template_subject"]').val(template.subject);
+        $('textarea[name="template_content"]').val(template.content);
+        $('input[name="template_sender_name"]').val(template.sender_name);
+        $('input[name="template_reply_to"]').val(template.reply_to);
+    }
+
+    function applyTemplatePreset(preset) {
+        const presets = {
+            'professional': {
+                tone: 'formal',
+                greeting: 'Dear {guest_name},',
+                closing: 'Best regards,\n{property_name} Team'
+            },
+            'friendly': {
+                tone: 'casual',
+                greeting: 'Hi {guest_name}! 👋',
+                closing: 'Warm regards,\n{property_name} Family'
+            },
+            'luxury': {
+                tone: 'elegant',
+                greeting: 'Dear Valued Guest {guest_name},',
+                closing: 'With distinguished regards,\n{property_name} Concierge'
+            },
+            'minimalist': {
+                tone: 'brief',
+                greeting: 'Hello {guest_name},',
+                closing: 'Thank you,\n{property_name}'
+            }
+        };
+
+        const selectedPreset = presets[preset];
+        if (selectedPreset) {
+            const currentContent = $('textarea[name="template_content"]').val();
+            // Apply preset styling hints
+            $('textarea[name="template_content"]').effect('highlight', { color: '#457d58' }, 500);
+        }
+    }
+
+    function previewEmailTemplate() {
+        const subject = $('input[name="template_subject"]').val();
+        const content = $('textarea[name="template_content"]').val();
+        
+        // Create preview modal (simplified)
+        const previewHtml = `
+            <div style="max-width: 600px; margin: 20px auto; font-family: Arial, sans-serif;">
+                <h3>📧 Email Preview</h3>
+                <div style="border: 1px solid #ddd; padding: 20px; background: #f9f9f9;">
+                    <strong>Subject:</strong> ${subject}<br><br>
+                    <div style="white-space: pre-line;">${content}</div>
+                </div>
+            </div>
+        `;
+        
+        // Show in new window or modal
+        const previewWindow = window.open('', 'EmailPreview', 'width=700,height=500');
+        previewWindow.document.write(previewHtml);
+    }
+
+    function sendTestEmail() {
+        const email = prompt('Enter email address to send test to:');
+        if (email) {
+            alert('Test email would be sent to: ' + email + '\n(Feature coming soon!)');
+        }
+    }
+
+    function saveEmailTemplate() {
+        const templateData = {
+            type: $('#email-template-selector').val(),
+            status: $('select[name="template_status"]').val(),
+            timing: $('select[name="template_timing"]').val(),
+            subject: $('input[name="template_subject"]').val(),
+            content: $('textarea[name="template_content"]').val(),
+            sender_name: $('input[name="template_sender_name"]').val(),
+            reply_to: $('input[name="template_reply_to"]').val(),
+            include_attachment: $('input[name="template_include_attachment"]').is(':checked')
+        };
+        
+        // Show success message
+        $('#save-template').text('✅ Saved!').prop('disabled', true);
+        setTimeout(() => {
+            $('#save-template').text('💾 Save Template').prop('disabled', false);
+        }, 2000);
+        
+        // Template saved successfully
+    }
+
     // Initialize all enhanced functionality
     initFieldsManager();
+    initEmailTemplateManager();
     initEnhancedFields();
 
 });

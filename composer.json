@@ -1,0 +1,24 @@
+{
+    "name": "ohm-events/aiohm-booking-mvp",
+    "description": "WordPress accommodation booking plugin with PSR-4 autoloading",
+    "type": "wordpress-plugin",
+    "license": "GPL-2.0-or-later",
+    "authors": [
+        {
+            "name": "OHM Events Agency",
+            "homepage": "https://www.ohm.events"
+        }
+    ],
+    "require": {
+        "php": ">=7.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "AIOHM\\BookingMVP\\": "src/"
+        }
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "classmap-authoritative": true
+    }
+}

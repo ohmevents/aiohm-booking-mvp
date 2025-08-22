@@ -3,7 +3,7 @@
 // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 $order_id = absint($_GET['order_id'] ?? 0);
 // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-$order_email = sanitize_email($_GET['email'] ?? '');
+$order_email = sanitize_email(wp_unslash($_GET['email'] ?? ''));
 
 global $wpdb;
 $order = null;

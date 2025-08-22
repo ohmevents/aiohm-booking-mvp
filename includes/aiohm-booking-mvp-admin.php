@@ -9,7 +9,8 @@ if ( ! defined('ABSPATH') ) { exit; }
 // Reason: This class manages custom booking tables and requires direct database access for admin operations
 class AIOHM_BOOKING_MVP_Admin {
     public static function init(){
-        add_action('admin_menu',[__CLASS__,'menu']);
+        // NOTE: Menu registration is handled by the namespaced Admin class
+        // Only register admin_init hooks that handle form processing and AJAX
         add_action('admin_init',[__CLASS__,'admin_init_hooks']);
         add_action('admin_init',[__CLASS__,'handle_calendar_redirect']);
         add_action('admin_init', [__CLASS__, 'handle_custom_settings_save']);
@@ -21,10 +22,21 @@ class AIOHM_BOOKING_MVP_Admin {
         add_submenu_page('aiohm-booking-mvp','Dashboard','Dashboard','manage_options','aiohm-booking-mvp',[__CLASS__,'dash']);
         add_submenu_page('aiohm-booking-mvp','Settings','Settings','manage_options','aiohm-booking-mvp-settings',[__CLASS__,'settings']);
 
-        // Static menu structure - rooms always enabled now
-        add_submenu_page('aiohm-booking-mvp','Accommodation Module','Accommodation Module','manage_options','aiohm-booking-mvp-accommodations',[__CLASS__,'accommodation_module']);
-        add_submenu_page('aiohm-booking-mvp','Calendar','Calendar','manage_options','aiohm-booking-mvp-calendar',[__CLASS__,'calendar']);
-        add_submenu_page('aiohm-booking-mvp','Orders','Orders','manage_options','aiohm-booking-mvp-orders',[__CLASS__,'orders']);
+        // Get settings to determine which menu items to show
+        $settings = aiohm_booking_mvp_opts();
+        $rooms_enabled = !empty($settings['enable_rooms']);
+        $notifications_enabled = !empty($settings['enable_notifications']);
+
+        if ($rooms_enabled) {
+            add_submenu_page('aiohm-booking-mvp','Accommodation','Accommodation','manage_options','aiohm-booking-mvp-accommodations',[__CLASS__,'accommodation_module']);
+            add_submenu_page('aiohm-booking-mvp','Calendar','Calendar','manage_options','aiohm-booking-mvp-calendar',[__CLASS__,'calendar']);
+            add_submenu_page('aiohm-booking-mvp','Orders','Orders','manage_options','aiohm-booking-mvp-orders',[__CLASS__,'orders']);
+        }
+        
+        if ($notifications_enabled) {
+            add_submenu_page('aiohm-booking-mvp','Notification','Notification','manage_options','aiohm-booking-mvp-notifications',[__CLASS__,'notification_module']);
+        }
+
         add_submenu_page('aiohm-booking-mvp','Get Help','Get Help','manage_options','aiohm-booking-mvp-get-help',[__CLASS__,'help_page']);
     }
     public static function admin_init_hooks(){
@@ -40,6 +52,7 @@ class AIOHM_BOOKING_MVP_Admin {
         add_action('wp_ajax_aiohm_booking_mvp_toggle_module', [__CLASS__, 'ajax_toggle_module']);
 
         // AJAX handler for individual accommodation saves
+        add_action('wp_ajax_aiohm_booking_mvp_save_ai_consent', [__CLASS__, 'ajax_save_ai_consent']);
         add_action('wp_ajax_aiohm_booking_mvp_save_individual_accommodation', [__CLASS__, 'ajax_save_individual_accommodation']);
 
         // AJAX handlers for calendar occupancy management
@@ -59,11 +72,28 @@ class AIOHM_BOOKING_MVP_Admin {
         
         // AJAX handler for AI order queries
         add_action('wp_ajax_aiohm_booking_mvp_ai_order_query', [__CLASS__, 'ajax_ai_order_query']);
+        
+        // AJAX handlers for notification module
+        add_action('wp_ajax_aiohm_test_smtp_connection', [__CLASS__, 'ajax_test_smtp_connection']);
+        add_action('wp_ajax_aiohm_reset_email_template', [__CLASS__, 'ajax_reset_email_template']);
 
         // Handle database updates
         add_action('admin_init', [__CLASS__, 'maybe_update_database']);
         // Handle accommodation details form submission
         add_action('admin_init', [__CLASS__, 'handle_accommodation_details_save']);
+    }
+
+    /**
+     * Checks for both global and per-request AI consent.
+     * Sends a JSON error and dies if consent is not granted.
+     */
+    private static function check_ai_consent() {
+        $settings = aiohm_booking_mvp_opts();
+        $global_consent = !empty($settings['ai_api_consent']);
+
+        if (!$global_consent) {
+            wp_send_json_error('You must consent to using external AI services. Please enable AI API calls in the plugin settings.');
+        }
     }
 
     /**
@@ -83,6 +113,7 @@ class AIOHM_BOOKING_MVP_Admin {
             wp_send_json_error('Missing question or data');
         }
 
+        self::check_ai_consent();
         $settings = aiohm_booking_mvp_opts();
         $provider = $settings['default_ai_provider'] ?? 'shareai';
         $ai = new AIOHM_BOOKING_MVP_AI_Client();
@@ -129,6 +160,7 @@ class AIOHM_BOOKING_MVP_Admin {
             wp_send_json_error('Please enter a question');
         }
 
+        self::check_ai_consent();
         $settings = aiohm_booking_mvp_opts();
         $provider = $settings['default_ai_provider'] ?? 'shareai';
         $ai = new AIOHM_BOOKING_MVP_AI_Client();
@@ -256,6 +288,7 @@ class AIOHM_BOOKING_MVP_Admin {
             wp_send_json_error('Please enter a question');
         }
 
+        self::check_ai_consent();
         $settings = aiohm_booking_mvp_opts();
         $provider = $settings['default_ai_provider'] ?? 'shareai';
         $ai = new AIOHM_BOOKING_MVP_AI_Client();
@@ -433,6 +466,27 @@ class AIOHM_BOOKING_MVP_Admin {
     }
 
     /**
+     * AJAX: Save AI API consent setting
+     */
+    public static function ajax_save_ai_consent() {
+        check_ajax_referer('aiohm_booking_mvp_admin_nonce', 'nonce');
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Insufficient permissions');
+        }
+
+        $consent = !empty($_POST['consent']);
+        
+        $settings = aiohm_booking_mvp_opts();
+        $settings['ai_api_consent'] = $consent ? '1' : '0';
+        
+        update_option('aiohm_booking_mvp_settings', $settings);
+        
+        wp_send_json_success([
+            'message' => 'Consent settings saved successfully.'
+        ]);
+    }
+
+    /**
      * AJAX: Toggle module enable/disable and persist option
      */
     public static function ajax_toggle_module() {
@@ -442,7 +496,7 @@ class AIOHM_BOOKING_MVP_Admin {
         }
         $module = sanitize_text_field(wp_unslash($_POST['module'] ?? ''));
         $value  = sanitize_text_field(wp_unslash($_POST['value'] ?? '0'));
-        $allowed = ['enable_rooms', 'enable_stripe', 'enable_paypal'];
+        $allowed = ['enable_rooms', 'enable_notifications', 'enable_stripe', 'enable_paypal', 'enable_booking_com', 'enable_airbnb', 'enable_shareai', 'enable_openai', 'enable_gemini'];
         if (!in_array($module, $allowed, true)) {
             wp_send_json_error('Invalid module');
         }
@@ -531,7 +585,7 @@ class AIOHM_BOOKING_MVP_Admin {
         }
 
         // Handle checkboxes
-        $checkboxes = ['enable_rooms', 'allow_private_all', 'form_field_address', 'form_field_age', 'form_field_company', 'form_field_country', 'form_field_phone', 'form_field_phone_required', 'form_field_special_requests', 'form_field_special_requests_required', 'enable_stripe', 'enable_paypal', 'enable_booking_com', 'enable_airbnb', 'form_field_vat', 'form_field_pets', 'form_field_arrival_time', 'form_field_purpose'];
+        $checkboxes = ['enable_rooms', 'enable_notifications', 'auto_send_notifications', 'allow_private_all', 'form_field_address', 'form_field_age', 'form_field_company', 'form_field_country', 'form_field_phone', 'form_field_phone_required', 'form_field_special_requests', 'form_field_special_requests_required', 'enable_stripe', 'enable_paypal', 'enable_booking_com', 'enable_airbnb', 'form_field_vat', 'form_field_pets', 'form_field_arrival_time'];
         foreach ($checkboxes as $checkbox) {
             $new_settings[$checkbox] = !empty($posted_settings[$checkbox]) ? '1' : '0';
         }
@@ -777,12 +831,12 @@ class AIOHM_BOOKING_MVP_Admin {
             }
             
             // Admin JavaScript
-            $admin_js_path = aiohm_booking_mvp_asset_path('js/aiohm-booking-mvp-admin.js');
+            $admin_js_path = aiohm_booking_mvp_asset_path('dist/js/admin.bundle.js');
             if (file_exists($admin_js_path)) {
                 wp_enqueue_script(
                     'aiohm-booking-mvp-admin-js',
-                    aiohm_booking_mvp_asset_url('js/aiohm-booking-mvp-admin.js'),
-                    ['jquery'],
+                    aiohm_booking_mvp_asset_url('dist/js/admin.bundle.js'),
+                    ['jquery', 'jquery-ui-sortable'],
                     AIOHM_BOOKING_MVP_VERSION,
                     true
                 );
@@ -851,7 +905,7 @@ class AIOHM_BOOKING_MVP_Admin {
             );
             wp_enqueue_script(
                 'aiohm-booking-mvp-admin-help-js',
-                aiohm_booking_mvp_asset_url('js/aiohm-booking-mvp-admin-help.js'),
+                aiohm_booking_mvp_asset_url('dist/js/help.bundle.js'),
                 ['jquery'],
                 AIOHM_BOOKING_MVP_VERSION,
                 true
@@ -939,9 +993,9 @@ class AIOHM_BOOKING_MVP_Admin {
         if ($screen->id === 'aiohm-booking-mvp_page_aiohm-booking-mvp-calendar' || 
             strpos($screen->id, 'calendar') !== false) {
             wp_enqueue_script(
-                'aiohm-booking-mvp-calendar-js',
-                aiohm_booking_mvp_asset_url('js/aiohm-booking-mvp-calendar.js'),
-                ['jquery', 'aiohm-booking-mvp-admin-js'],
+                'aiohm-booking-mvp-calendar-bundle-js',
+                aiohm_booking_mvp_asset_url('dist/js/calendar.bundle.js'),
+                ['jquery', 'aiohm-booking-mvp-admin-js'], // Depends on the main admin bundle
                 AIOHM_BOOKING_MVP_VERSION,
                 true
             );
@@ -963,8 +1017,8 @@ class AIOHM_BOOKING_MVP_Admin {
             );
             wp_enqueue_script(
                 'aiohm-booking-mvp-frontend-preview',
-                aiohm_booking_mvp_asset_url('js/aiohm-booking-mvp-app.js'),
-                [],
+                aiohm_booking_mvp_asset_url('dist/js/frontend.bundle.js'),
+                ['jquery'],
                 AIOHM_BOOKING_MVP_VERSION,
                 true
             );
@@ -972,6 +1026,20 @@ class AIOHM_BOOKING_MVP_Admin {
                 'rest'  => esc_url_raw(rest_url('aiohm-booking-mvp/v1')),
                 'nonce' => wp_create_nonce('wp_rest'),
             ]);
+        }
+        
+        // Notification module specific scripts
+        if ($screen->id === 'aiohm-booking-mvp_page_aiohm-booking-mvp-notifications') {
+            $notifications_js_path = aiohm_booking_mvp_asset_path('dist/js/notifications.bundle.js');
+            if (file_exists($notifications_js_path)) {
+                wp_enqueue_script(
+                    'aiohm-booking-mvp-notifications-js',
+                    aiohm_booking_mvp_asset_url('dist/js/notifications.bundle.js'),
+                    ['jquery', 'aiohm-booking-mvp-admin-js'],
+                    AIOHM_BOOKING_MVP_VERSION,
+                    true
+                );
+            }
         }
     }
 
@@ -1472,7 +1540,7 @@ class AIOHM_BOOKING_MVP_Admin {
                                 <div class="impl-content">
                                     <h4>Add Booking Form</h4>
                                     <p>Copy this shortcode to any page or post:</p>
-                                    <code class="shortcode-highlight">[aiohm_booking]</code>
+                                    <code class="shortcode-highlight">[aiohm_booking_mvp]</code>
                                 </div>
                             </div>
                             <div class="impl-step">
@@ -1567,15 +1635,15 @@ class AIOHM_BOOKING_MVP_Admin {
                         <h3>📝 Quick Shortcodes</h3>
                         <div class="shortcode-list">
                             <div class="shortcode-item">
-                                <code>[aiohm_booking]</code>
+                                <code>[aiohm_booking_mvp]</code>
                                 <span>Main booking form</span>
                             </div>
                             <div class="shortcode-item">
-                                <code>[aiohm_booking_checkout]</code>
+                                <code>[aiohm_booking_mvp_checkout]</code>
                                 <span>Checkout page</span>
                             </div>
                             <div class="shortcode-item">
-                                <code>[aiohm_booking style="classic"]</code>
+                                <code>[aiohm_booking_mvp style="classic"]</code>
                                 <span>Simple form style</span>
                             </div>
                         </div>
@@ -1646,7 +1714,7 @@ class AIOHM_BOOKING_MVP_Admin {
                 // Update calendar to remove deleted booking blocks
                 self::update_calendar_for_deleted_orders($order_details);
                 
-                echo '<div class="notice notice-success"><p>' . count($order_ids) . ' order(s) deleted permanently.</p></div>';
+                echo '<div class="notice notice-success"><p>' . esc_html(count($order_ids)) . ' order(s) deleted permanently.</p></div>';
             }
         }
 
@@ -1782,7 +1850,14 @@ class AIOHM_BOOKING_MVP_Admin {
             </form>
 
             <!-- AI Order Insights Section -->
-            <?php self::renderAIOrderInsights(); ?>
+            <?php
+            $settings = aiohm_booking_mvp_opts();
+            $ai_enabled = !empty($settings['enable_shareai']) || !empty($settings['enable_openai']) || !empty($settings['enable_gemini']);
+
+            if ($ai_enabled) {
+                self::renderAIOrderInsights();
+            }
+            ?>
         </div>
         <?php
     }
@@ -1866,6 +1941,7 @@ class AIOHM_BOOKING_MVP_Admin {
 
         $o = get_option('aiohm_booking_mvp_settings',[]);
         $enable_rooms = !empty($o['enable_rooms']);
+        $enable_notifications = !empty($o['enable_notifications']);
         
         $available_rooms = intval($o['available_rooms'] ?? 7);
         $room_price = esc_attr($o['room_price'] ?? '0');
@@ -1895,7 +1971,6 @@ class AIOHM_BOOKING_MVP_Admin {
         $form_field_vat = !empty($o['form_field_vat']);
         $form_field_pets = !empty($o['form_field_pets']);
         $form_field_arrival_time = !empty($o['form_field_arrival_time']);
-        $form_field_purpose = !empty($o['form_field_purpose']);
         $form_field_phone = !empty($o['form_field_phone']);
         $form_field_special_requests = !empty($o['form_field_special_requests']);
 
@@ -1919,7 +1994,7 @@ class AIOHM_BOOKING_MVP_Admin {
                         <img src="<?php echo esc_url( aiohm_booking_mvp_asset_url('images/aiohm-booking-OHM_logo-black.svg') ); ?>" alt="AIOHM" class="aiohm-header-logo">
                     </div>
                     <div class="aiohm-header-text">
-                        <h1>Booking Configuration</h1>
+                        <h1>AIOHM Booking Module Configuration</h1>
                         <p class="aiohm-tagline">Configure your booking modules to align with your venue's unique offering and values.</p>
                     </div>
                 </div>
@@ -1943,10 +2018,10 @@ class AIOHM_BOOKING_MVP_Admin {
             <div class="aiohm-booking-mvp-modules">
                 <div class="aiohm-module-grid">
                     <!-- Accommodation Module -->
-                    <div class="aiohm-module-card <?php echo $enable_rooms ? 'is-active' : 'is-inactive'; ?>">
+                    <div class="aiohm-module-card module-accommodation <?php echo $enable_rooms ? 'is-active' : 'is-inactive'; ?>">
                         <div class="aiohm-module-header">
-                            <h3>🏠 Accommodation Module</h3>
-                            <label class="aiohm-toggle">
+                            <h3>Accommodation Module</h3>
+                            <label class="aiohm-toggle" title="Enable or disable the Accommodation booking module">
                                 <input type="checkbox" name="aiohm_booking_mvp_settings[enable_rooms]" value="1" <?php checked($enable_rooms,true); ?>>
                                 <span class="aiohm-toggle-slider"></span>
                             </label>
@@ -1991,6 +2066,63 @@ class AIOHM_BOOKING_MVP_Admin {
                             </div>
                             <div class="aiohm-setting-row">
                                 <?php submit_button('Save & Configure', 'primary', 'save_and_configure', false); ?>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Email Notification Module -->
+                    <div class="aiohm-module-card module-notification <?php echo $enable_notifications ? 'is-active' : 'is-inactive'; ?>">
+                        <div class="aiohm-module-header">
+                            <h3>Email Notification Module</h3>
+                            <label class="aiohm-toggle" title="Enable or disable the Email Notification module">
+                                <input type="checkbox" name="aiohm_booking_mvp_settings[enable_notifications]" value="1" <?php checked($enable_notifications,true); ?>>
+                                <span class="aiohm-toggle-slider"></span>
+                            </label>
+                        </div>
+                        <p class="aiohm-module-description">Professional email notifications for booking confirmations, cancellations, and payment reminders. Custom SMTP configuration and branded email templates.</p>
+
+                        <div class="aiohm-module-settings">
+                            <div class="aiohm-setting-row-inline">
+                                <div class="aiohm-setting-row">
+                                    <label>Email Provider</label>
+                                    <select name="aiohm_booking_mvp_settings[email_provider]" class="notification-provider-select">
+                                        <option value="wordpress">WordPress Native (localhost/default)</option>
+                                        <option value="smtp">Custom SMTP</option>
+                                        <option value="gmail">Gmail</option>
+                                        <option value="outlook">Outlook</option>
+                                        <option value="mailgun">Mailgun</option>
+                                        <option value="sendgrid">SendGrid</option>
+                                    </select>
+                                </div>
+                                <div class="aiohm-setting-row">
+                                    <label>Email Newsletter</label>
+                                    <select name="aiohm_booking_mvp_settings[email_newsletter]" class="notification-newsletter-select">
+                                        <option value="none">No Newsletter Integration</option>
+                                        <option value="mautic">Mautic (self-hosted)</option>
+                                        <option value="mailchimp">Mailchimp</option>
+                                        <option value="convertkit">ConvertKit</option>
+                                        <option value="activecampaign">ActiveCampaign</option>
+                                        <option value="aweber">AWeber</option>
+                                        <option value="mailerlite">MailerLite</option>
+                                        <option value="constant_contact">Constant Contact</option>
+                                        <option value="sendinblue">Sendinblue (Brevo)</option>
+                                        <option value="klaviyo">Klaviyo</option>
+                                        <option value="getresponse">GetResponse</option>
+                                        <option value="drip">Drip</option>
+                                        <option value="hubspot">HubSpot</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="aiohm-setting-row aiohm-setting-row-spaced">
+                                <label>
+                                    <input type="checkbox" name="aiohm_booking_mvp_settings[auto_send_notifications]" value="1" <?php checked(!empty($o['auto_send_notifications']),true); ?>>
+                                    Automatically send booking confirmation emails
+                                </label>
+                            </div>
+
+                            <div class="aiohm-setting-row">
+                                <?php submit_button('Save & Configure', 'primary', 'save_and_configure_notifications', false); ?>
                             </div>
                         </div>
                     </div>
@@ -2045,64 +2177,68 @@ class AIOHM_BOOKING_MVP_Admin {
                         <h4>Global Settings</h4>
                         <p>Configure global plugin settings and preferences:</p>
                         
-                        <div class="aiohm-setting-row">
-                            <label>Currency</label>
-                            <select name="aiohm_booking_mvp_settings[currency]" class="enhanced-select">
-                                <option value="EUR" <?php selected($currency, 'EUR'); ?>>🇪🇺 Euro (EUR)</option>
-                                <option value="USD" <?php selected($currency, 'USD'); ?>>🇺🇸 US Dollar (USD)</option>
-                                <option value="GBP" <?php selected($currency, 'GBP'); ?>>🇬🇧 British Pound (GBP)</option>
-                                <option value="CAD" <?php selected($currency, 'CAD'); ?>>🇨🇦 Canadian Dollar (CAD)</option>
-                                <option value="AUD" <?php selected($currency, 'AUD'); ?>>🇦🇺 Australian Dollar (AUD)</option>
-                                <option value="CHF" <?php selected($currency, 'CHF'); ?>>🇨🇭 Swiss Franc (CHF)</option>
-                                <option value="JPY" <?php selected($currency, 'JPY'); ?>>🇯🇵 Japanese Yen (JPY)</option>
-                                <option value="CNY" <?php selected($currency, 'CNY'); ?>>🇨🇳 Chinese Yuan (CNY)</option>
-                                <option value="INR" <?php selected($currency, 'INR'); ?>>🇮🇳 Indian Rupee (INR)</option>
-                                <option value="BRL" <?php selected($currency, 'BRL'); ?>>🇧🇷 Brazilian Real (BRL)</option>
-                                <option value="MXN" <?php selected($currency, 'MXN'); ?>>🇲🇽 Mexican Peso (MXN)</option>
-                                <option value="RUB" <?php selected($currency, 'RUB'); ?>>🇷🇺 Russian Ruble (RUB)</option>
-                                <option value="KRW" <?php selected($currency, 'KRW'); ?>>🇰🇷 South Korean Won (KRW)</option>
-                                <option value="SGD" <?php selected($currency, 'SGD'); ?>>🇸🇬 Singapore Dollar (SGD)</option>
-                                <option value="HKD" <?php selected($currency, 'HKD'); ?>>🇭🇰 Hong Kong Dollar (HKD)</option>
-                                <option value="NOK" <?php selected($currency, 'NOK'); ?>>🇳🇴 Norwegian Krone (NOK)</option>
-                                <option value="SEK" <?php selected($currency, 'SEK'); ?>>🇸🇪 Swedish Krona (SEK)</option>
-                                <option value="DKK" <?php selected($currency, 'DKK'); ?>>🇩🇰 Danish Krone (DKK)</option>
-                                <option value="PLN" <?php selected($currency, 'PLN'); ?>>🇵🇱 Polish Złoty (PLN)</option>
-                                <option value="CZK" <?php selected($currency, 'CZK'); ?>>🇨🇿 Czech Koruna (CZK)</option>
-                                <option value="HUF" <?php selected($currency, 'HUF'); ?>>🇭🇺 Hungarian Forint (HUF)</option>
-                                <option value="RON" <?php selected($currency, 'RON'); ?>>🇷🇴 Romanian Leu (RON)</option>
-                                <option value="BGN" <?php selected($currency, 'BGN'); ?>>🇧🇬 Bulgarian Lev (BGN)</option>
-                                <option value="HRK" <?php selected($currency, 'HRK'); ?>>🇭🇷 Croatian Kuna (HRK)</option>
-                                <option value="TRY" <?php selected($currency, 'TRY'); ?>>🇹🇷 Turkish Lira (TRY)</option>
-                                <option value="ZAR" <?php selected($currency, 'ZAR'); ?>>🇿🇦 South African Rand (ZAR)</option>
-                                <option value="NZD" <?php selected($currency, 'NZD'); ?>>🇳🇿 New Zealand Dollar (NZD)</option>
-                                <option value="AED" <?php selected($currency, 'AED'); ?>>🇦🇪 UAE Dirham (AED)</option>
-                                <option value="SAR" <?php selected($currency, 'SAR'); ?>>🇸🇦 Saudi Riyal (SAR)</option>
-                                <option value="ILS" <?php selected($currency, 'ILS'); ?>>🇮🇱 Israeli Shekel (ILS)</option>
-                                <option value="EGP" <?php selected($currency, 'EGP'); ?>>🇪🇬 Egyptian Pound (EGP)</option>
-                            </select>
-                            <small>Select your business currency for pricing display</small>
+                        <div class="aiohm-global-settings-grid">
+                            <div class="aiohm-setting-row">
+                                <label>Currency</label>
+                                <select name="aiohm_booking_mvp_settings[currency]" class="enhanced-select currency-select">
+                                    <option value="EUR" <?php selected($currency, 'EUR'); ?>>🇪🇺 Euro (EUR)</option>
+                                    <option value="USD" <?php selected($currency, 'USD'); ?>>🇺🇸 US Dollar (USD)</option>
+                                    <option value="GBP" <?php selected($currency, 'GBP'); ?>>🇬🇧 British Pound (GBP)</option>
+                                    <option value="CAD" <?php selected($currency, 'CAD'); ?>>🇨🇦 Canadian Dollar (CAD)</option>
+                                    <option value="AUD" <?php selected($currency, 'AUD'); ?>>🇦🇺 Australian Dollar (AUD)</option>
+                                    <option value="CHF" <?php selected($currency, 'CHF'); ?>>🇨🇭 Swiss Franc (CHF)</option>
+                                    <option value="JPY" <?php selected($currency, 'JPY'); ?>>🇯🇵 Japanese Yen (JPY)</option>
+                                    <option value="CNY" <?php selected($currency, 'CNY'); ?>>🇨🇳 Chinese Yuan (CNY)</option>
+                                    <option value="INR" <?php selected($currency, 'INR'); ?>>🇮🇳 Indian Rupee (INR)</option>
+                                    <option value="BRL" <?php selected($currency, 'BRL'); ?>>🇧🇷 Brazilian Real (BRL)</option>
+                                    <option value="MXN" <?php selected($currency, 'MXN'); ?>>🇲🇽 Mexican Peso (MXN)</option>
+                                    <option value="RUB" <?php selected($currency, 'RUB'); ?>>🇷🇺 Russian Ruble (RUB)</option>
+                                    <option value="KRW" <?php selected($currency, 'KRW'); ?>>🇰🇷 South Korean Won (KRW)</option>
+                                    <option value="SGD" <?php selected($currency, 'SGD'); ?>>🇸🇬 Singapore Dollar (SGD)</option>
+                                    <option value="HKD" <?php selected($currency, 'HKD'); ?>>🇭🇰 Hong Kong Dollar (HKD)</option>
+                                    <option value="NOK" <?php selected($currency, 'NOK'); ?>>🇳🇴 Norwegian Krone (NOK)</option>
+                                    <option value="SEK" <?php selected($currency, 'SEK'); ?>>🇸🇪 Swedish Krona (SEK)</option>
+                                    <option value="DKK" <?php selected($currency, 'DKK'); ?>>🇩🇰 Danish Krone (DKK)</option>
+                                    <option value="PLN" <?php selected($currency, 'PLN'); ?>>🇵🇱 Polish Złoty (PLN)</option>
+                                    <option value="CZK" <?php selected($currency, 'CZK'); ?>>🇨🇿 Czech Koruna (CZK)</option>
+                                    <option value="HUF" <?php selected($currency, 'HUF'); ?>>🇭🇺 Hungarian Forint (HUF)</option>
+                                    <option value="RON" <?php selected($currency, 'RON'); ?>>🇷🇴 Romanian Leu (RON)</option>
+                                    <option value="BGN" <?php selected($currency, 'BGN'); ?>>🇧🇬 Bulgarian Lev (BGN)</option>
+                                    <option value="HRK" <?php selected($currency, 'HRK'); ?>>🇭🇷 Croatian Kuna (HRK)</option>
+                                    <option value="TRY" <?php selected($currency, 'TRY'); ?>>🇹🇷 Turkish Lira (TRY)</option>
+                                    <option value="ZAR" <?php selected($currency, 'ZAR'); ?>>🇿🇦 South African Rand (ZAR)</option>
+                                    <option value="NZD" <?php selected($currency, 'NZD'); ?>>🇳🇿 New Zealand Dollar (NZD)</option>
+                                    <option value="AED" <?php selected($currency, 'AED'); ?>>🇦🇪 UAE Dirham (AED)</option>
+                                    <option value="SAR" <?php selected($currency, 'SAR'); ?>>🇸🇦 Saudi Riyal (SAR)</option>
+                                    <option value="ILS" <?php selected($currency, 'ILS'); ?>>🇮🇱 Israeli Shekel (ILS)</option>
+                                    <option value="EGP" <?php selected($currency, 'EGP'); ?>>🇪🇬 Egyptian Pound (EGP)</option>
+                                </select>
+                                <small>Select your business currency for pricing display</small>
+                            </div>
+                            
+                            <div class="aiohm-setting-row">
+                                <label><?php esc_html_e('Plugin Language', 'aiohm-booking-mvp'); ?></label>
+                                <select name="aiohm_booking_mvp_settings[plugin_language]" class="enhanced-select language-select">
+                                    <option value="en" <?php selected($plugin_language, 'en'); ?>>🇺🇸 <?php esc_html_e('English (Default)', 'aiohm-booking-mvp'); ?></option>
+                                    <option value="ro" <?php selected($plugin_language, 'ro'); ?>>🇷🇴 <?php esc_html_e('Romanian', 'aiohm-booking-mvp'); ?></option>
+                                </select>
+                                <small><?php esc_html_e('Choose the language for your booking system interface', 'aiohm-booking-mvp'); ?></small>
+                            </div>
                         </div>
                         
-                        <div class="aiohm-setting-row">
-                            <label><?php esc_html_e('Plugin Language', 'aiohm-booking-mvp'); ?></label>
-                            <select name="aiohm_booking_mvp_settings[plugin_language]" class="enhanced-select">
-                                <option value="en" <?php selected($plugin_language, 'en'); ?>>🇺🇸 <?php esc_html_e('English (Default)', 'aiohm-booking-mvp'); ?></option>
-                                <option value="ro" <?php selected($plugin_language, 'ro'); ?>>🇷🇴 <?php esc_html_e('Romanian', 'aiohm-booking-mvp'); ?></option>
-                            </select>
-                            <small><?php esc_html_e('Choose the language for your booking system interface', 'aiohm-booking-mvp'); ?></small>
-                        </div>
-                        
-                        <div class="aiohm-setting-row">
-                            <label>Deposit Percentage (%)</label>
-                            <input type="number" min="0" max="100" step="1" name="aiohm_booking_mvp_settings[deposit_percent]" value="<?php echo esc_attr($deposit); ?>" class="form-control">
-                            <small>How much guests pay upfront (0% = full payment required)</small>
-                        </div>
-                        
-                        <div class="aiohm-setting-row">
-                            <label>Early Bird Window (days before check-in)</label>
-                            <?php $earlybird_days = isset($o['earlybird_days']) ? absint($o['earlybird_days']) : 30; ?>
-                            <input type="number" name="aiohm_booking_mvp_settings[earlybird_days]" min="0" step="1" value="<?php echo esc_attr($earlybird_days); ?>" class="form-control">
-                            <small class="description">Number of days before check-in required to qualify for early bird pricing (default 30).</small>
+                        <div class="aiohm-global-settings-grid">
+                            <div class="aiohm-setting-row">
+                                <label>Deposit Percentage (%)</label>
+                                <input type="number" min="0" max="100" step="1" name="aiohm_booking_mvp_settings[deposit_percent]" value="<?php echo esc_attr($deposit); ?>" class="form-control">
+                                <small>How much guests pay upfront (0% = full payment required)</small>
+                            </div>
+                            
+                            <div class="aiohm-setting-row">
+                                <label>Early Bird Window</label>
+                                <?php $earlybird_days = isset($o['earlybird_days']) ? absint($o['earlybird_days']) : 30; ?>
+                                <input type="number" name="aiohm_booking_mvp_settings[earlybird_days]" min="0" step="1" value="<?php echo esc_attr($earlybird_days); ?>" class="form-control">
+                                <small class="description">Number of days before check-in required to qualify for early bird pricing (default 30).</small>
+                            </div>
                         </div>
                         
                         <div class="aiohm-setting-row">
@@ -2127,14 +2263,11 @@ class AIOHM_BOOKING_MVP_Admin {
                                             <span class="field-label-inline">
                                                 Address <span class="field-description-inline">(Guest's full address for accommodation stays)</span>
                                             </span>
-                                            <span class="field-layout-badge full">Full</span>
+                                            <button type="button" class="field-required-toggle <?php echo !empty($o['form_field_address_required']) ? 'required' : 'optional'; ?>" data-field="address">
+                                                <span class="toggle-text"><?php echo !empty($o['form_field_address_required']) ? 'Required' : 'Optional'; ?></span>
+                                            </button>
+                                            <input type="hidden" name="aiohm_booking_mvp_settings[form_field_address_required]" value="<?php echo !empty($o['form_field_address_required']) ? '1' : '0'; ?>" class="required-hidden-input">
                                         </label>
-                                        <div class="field-options">
-                                            <label class="mandatory-toggle">
-                                                <input type="checkbox" name="aiohm_booking_mvp_settings[form_field_address_required]" value="1" <?php checked(!empty($o['form_field_address_required'])); ?> class="mandatory-checkbox">
-                                                <span class="mandatory-label">Required</span>
-                                            </label>
-                                        </div>
                                     </div>
                                 </div>
                                 
@@ -2148,14 +2281,11 @@ class AIOHM_BOOKING_MVP_Admin {
                                             <span class="field-label-inline">
                                                 Age <span class="field-description-inline">(Guest's age for accommodation requirements)</span>
                                             </span>
-                                            <span class="field-layout-badge full">Full</span>
+                                            <button type="button" class="field-required-toggle <?php echo !empty($o['form_field_age_required']) ? 'required' : 'optional'; ?>" data-field="age">
+                                                <span class="toggle-text"><?php echo !empty($o['form_field_age_required']) ? 'Required' : 'Optional'; ?></span>
+                                            </button>
+                                            <input type="hidden" name="aiohm_booking_mvp_settings[form_field_age_required]" value="<?php echo !empty($o['form_field_age_required']) ? '1' : '0'; ?>" class="required-hidden-input">
                                         </label>
-                                        <div class="field-options">
-                                            <label class="mandatory-toggle">
-                                                <input type="checkbox" name="aiohm_booking_mvp_settings[form_field_age_required]" value="1" <?php checked(!empty($o['form_field_age_required'])); ?> class="mandatory-checkbox">
-                                                <span class="mandatory-label">Required</span>
-                                            </label>
-                                        </div>
                                     </div>
                                 </div>
                                 
@@ -2169,14 +2299,11 @@ class AIOHM_BOOKING_MVP_Admin {
                                             <span class="field-label-inline">
                                                 Company/Organization <span class="field-description-inline">(Business or organization name)</span>
                                             </span>
-                                            <span class="field-layout-badge full">Full</span>
+                                            <button type="button" class="field-required-toggle <?php echo !empty($o['form_field_company_required']) ? 'required' : 'optional'; ?>" data-field="company">
+                                                <span class="toggle-text"><?php echo !empty($o['form_field_company_required']) ? 'Required' : 'Optional'; ?></span>
+                                            </button>
+                                            <input type="hidden" name="aiohm_booking_mvp_settings[form_field_company_required]" value="<?php echo !empty($o['form_field_company_required']) ? '1' : '0'; ?>" class="required-hidden-input">
                                         </label>
-                                        <div class="field-options">
-                                            <label class="mandatory-toggle">
-                                                <input type="checkbox" name="aiohm_booking_mvp_settings[form_field_company_required]" value="1" <?php checked(!empty($o['form_field_company_required'])); ?> class="mandatory-checkbox">
-                                                <span class="mandatory-label">Required</span>
-                                            </label>
-                                        </div>
                                     </div>
                                 </div>
                                 
@@ -2190,14 +2317,11 @@ class AIOHM_BOOKING_MVP_Admin {
                                             <span class="field-label-inline">
                                                 Country <span class="field-description-inline">(Guest's country of residence)</span>
                                             </span>
-                                            <span class="field-layout-badge full">Full</span>
+                                            <button type="button" class="field-required-toggle <?php echo !empty($o['form_field_country_required']) ? 'required' : 'optional'; ?>" data-field="country">
+                                                <span class="toggle-text"><?php echo !empty($o['form_field_country_required']) ? 'Required' : 'Optional'; ?></span>
+                                            </button>
+                                            <input type="hidden" name="aiohm_booking_mvp_settings[form_field_country_required]" value="<?php echo !empty($o['form_field_country_required']) ? '1' : '0'; ?>" class="required-hidden-input">
                                         </label>
-                                        <div class="field-options">
-                                            <label class="mandatory-toggle">
-                                                <input type="checkbox" name="aiohm_booking_mvp_settings[form_field_country_required]" value="1" <?php checked(!empty($o['form_field_country_required'])); ?> class="mandatory-checkbox">
-                                                <span class="mandatory-label">Required</span>
-                                            </label>
-                                        </div>
                                     </div>
                                 </div>
                                 
@@ -2211,35 +2335,11 @@ class AIOHM_BOOKING_MVP_Admin {
                                             <span class="field-label-inline">
                                                 Estimated Arrival Time <span class="field-description-inline">(Ask guests for their estimated arrival time)</span>
                                             </span>
-                                            <span class="field-layout-badge full">Full</span>
+                                            <button type="button" class="field-required-toggle <?php echo !empty($o['form_field_arrival_time_required']) ? 'required' : 'optional'; ?>" data-field="arrival_time">
+                                                <span class="toggle-text"><?php echo !empty($o['form_field_arrival_time_required']) ? 'Required' : 'Optional'; ?></span>
+                                            </button>
+                                            <input type="hidden" name="aiohm_booking_mvp_settings[form_field_arrival_time_required]" value="<?php echo !empty($o['form_field_arrival_time_required']) ? '1' : '0'; ?>" class="required-hidden-input">
                                         </label>
-                                        <div class="field-options">
-                                            <label class="mandatory-toggle">
-                                                <input type="checkbox" name="aiohm_booking_mvp_settings[form_field_arrival_time_required]" value="1" <?php checked(!empty($o['form_field_arrival_time_required'])); ?> class="mandatory-checkbox">
-                                                <span class="mandatory-label">Required</span>
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="aiohm-field-toggle" data-field="purpose">
-                                    <div class="field-handle">
-                                        <span class="dashicons dashicons-menu"></span>
-                                    </div>
-                                    <div class="field-content">
-                                        <label>
-                                            <input type="checkbox" name="aiohm_booking_mvp_settings[form_field_purpose]" value="1" <?php checked($form_field_purpose); ?> class="form-field-toggle" data-field="purpose">
-                                            <span class="field-label-inline">
-                                                Purpose of Stay <span class="field-description-inline">(Ask guests the purpose of their stay - leisure, business, etc.)</span>
-                                            </span>
-                                            <span class="field-layout-badge full">Full</span>
-                                        </label>
-                                        <div class="field-options">
-                                            <label class="mandatory-toggle">
-                                                <input type="checkbox" name="aiohm_booking_mvp_settings[form_field_purpose_required]" value="1" <?php checked(!empty($o['form_field_purpose_required'])); ?> class="mandatory-checkbox">
-                                                <span class="mandatory-label">Required</span>
-                                            </label>
-                                        </div>
                                     </div>
                                 </div>
                                 
@@ -2253,14 +2353,11 @@ class AIOHM_BOOKING_MVP_Admin {
                                             <span class="field-label-inline">
                                                 Phone Number <span class="field-description-inline">(Guest's contact phone number)</span>
                                             </span>
-                                            <span class="field-layout-badge full">Full</span>
+                                            <button type="button" class="field-required-toggle <?php echo !empty($o['form_field_phone_required']) ? 'required' : 'optional'; ?>" data-field="phone">
+                                                <span class="toggle-text"><?php echo !empty($o['form_field_phone_required']) ? 'Required' : 'Optional'; ?></span>
+                                            </button>
+                                            <input type="hidden" name="aiohm_booking_mvp_settings[form_field_phone_required]" value="<?php echo !empty($o['form_field_phone_required']) ? '1' : '0'; ?>" class="required-hidden-input">
                                         </label>
-                                        <div class="field-options">
-                                            <label class="mandatory-toggle">
-                                                <input type="checkbox" name="aiohm_booking_mvp_settings[form_field_phone_required]" value="1" <?php checked(!empty($o['form_field_phone_required'])); ?> class="mandatory-checkbox">
-                                                <span class="mandatory-label">Required</span>
-                                            </label>
-                                        </div>
                                     </div>
                                 </div>
                                 
@@ -2274,14 +2371,11 @@ class AIOHM_BOOKING_MVP_Admin {
                                             <span class="field-label-inline">
                                                 Special Requests <span class="field-description-inline">(Additional guest requirements and requests)</span>
                                             </span>
-                                            <span class="field-layout-badge full">Full</span>
+                                            <button type="button" class="field-required-toggle <?php echo !empty($o['form_field_special_requests_required']) ? 'required' : 'optional'; ?>" data-field="special_requests">
+                                                <span class="toggle-text"><?php echo !empty($o['form_field_special_requests_required']) ? 'Required' : 'Optional'; ?></span>
+                                            </button>
+                                            <input type="hidden" name="aiohm_booking_mvp_settings[form_field_special_requests_required]" value="<?php echo !empty($o['form_field_special_requests_required']) ? '1' : '0'; ?>" class="required-hidden-input">
                                         </label>
-                                        <div class="field-options">
-                                            <label class="mandatory-toggle">
-                                                <input type="checkbox" name="aiohm_booking_mvp_settings[form_field_special_requests_required]" value="1" <?php checked(!empty($o['form_field_special_requests_required'])); ?> class="mandatory-checkbox">
-                                                <span class="mandatory-label">Required</span>
-                                            </label>
-                                        </div>
                                     </div>
                                 </div>
                                 
@@ -2295,14 +2389,11 @@ class AIOHM_BOOKING_MVP_Admin {
                                             <span class="field-label-inline">
                                                 VAT Number <span class="field-description-inline">(Field for guests to provide a VAT number for invoicing)</span>
                                             </span>
-                                            <span class="field-layout-badge full">Full</span>
+                                            <button type="button" class="field-required-toggle <?php echo !empty($o['form_field_vat_required']) ? 'required' : 'optional'; ?>" data-field="vat">
+                                                <span class="toggle-text"><?php echo !empty($o['form_field_vat_required']) ? 'Required' : 'Optional'; ?></span>
+                                            </button>
+                                            <input type="hidden" name="aiohm_booking_mvp_settings[form_field_vat_required]" value="<?php echo !empty($o['form_field_vat_required']) ? '1' : '0'; ?>" class="required-hidden-input">
                                         </label>
-                                        <div class="field-options">
-                                            <label class="mandatory-toggle">
-                                                <input type="checkbox" name="aiohm_booking_mvp_settings[form_field_vat_required]" value="1" <?php checked(!empty($o['form_field_vat_required'])); ?> class="mandatory-checkbox">
-                                                <span class="mandatory-label">Required</span>
-                                            </label>
-                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -2312,7 +2403,7 @@ class AIOHM_BOOKING_MVP_Admin {
                             </div>
                             
                             <!-- Hidden field for field order -->
-                            <input type="hidden" name="aiohm_booking_mvp_settings[field_order]" id="field-order-input" value="<?php echo esc_attr(implode(',', $o['field_order'] ?? ['address', 'age', 'company', 'country', 'arrival_time', 'purpose', 'phone', 'special_requests', 'vat'])); ?>">
+                            <input type="hidden" name="aiohm_booking_mvp_settings[field_order]" id="field-order-input" value="<?php echo esc_attr(implode(',', $o['field_order'] ?? ['address', 'age', 'company', 'country', 'arrival_time', 'phone', 'special_requests', 'vat'])); ?>">
                         </div>
                     </div>
 
@@ -2320,17 +2411,16 @@ class AIOHM_BOOKING_MVP_Admin {
                         <h4>Live Preview</h4>
                         <p class="aiohm-preview-subtitle">Customize the form with settings from left to view live changes. All actions are disabled here.</p>
                         <div class="aiohm-form-preview" id="booking-form-preview">
-                            <span class="aiohm-preview-badge">Preview Only</span>
                             <div class="booking-form-container" style="--primary-color: <?php echo esc_attr($form_primary_color); ?>; --secondary-color: #ffffff;">
                                 <?php
                                 // Manually load shortcode assets since we're in admin context
-                                AIOHM_BOOKING_MVP_Shortcodes::assets();
+                                if (class_exists('AIOHM_BOOKING_MVP_Shortcodes')) AIOHM_BOOKING_MVP_Shortcodes::assets();
                                 
                                 // Render the real shortcode output but neutralize <form> tags to avoid nested forms
-                                $shortcode = '[aiohm_booking type="accommodation" style="modern"]';
+                                $shortcode = '[aiohm_booking_mvp type="accommodation" style="modern"]';
                                 $output = do_shortcode($shortcode);
                                 
-                                if (empty(trim(wp_strip_all_tags($output))) || strpos($output, '[aiohm_booking') !== false) {
+                                if (empty(trim(wp_strip_all_tags($output))) || strpos($output, '[aiohm_booking_mvp') !== false) {
                                     // Fallback if shortcode doesn't render or still shows shortcode text
                                     echo '<div class="aiohm-preview-fallback">';
                                     echo '<p><strong>⚠️ Shortcode Preview Issue</strong></p>';
@@ -2364,10 +2454,10 @@ class AIOHM_BOOKING_MVP_Admin {
             <div class="aiohm-booking-mvp-modules">
                 <div class="aiohm-module-grid">
                     <!-- Stripe Module -->
-                    <div class="aiohm-module-card <?php echo $enable_stripe ? 'is-active' : 'is-inactive'; ?>">
+                    <div class="aiohm-module-card module-payment <?php echo $enable_stripe ? 'is-active' : 'is-inactive'; ?>">
                         <div class="aiohm-module-header">
-                            <h3>💳 Stripe Module</h3>
-                            <label class="aiohm-toggle">
+                            <h3>Stripe Module</h3>
+                            <label class="aiohm-toggle" title="Enable or disable the Stripe payment gateway">
                                 <input type="checkbox" name="aiohm_booking_mvp_settings[enable_stripe]" value="1" <?php checked($enable_stripe,true); ?>>
                                 <span class="aiohm-toggle-slider"></span>
                             </label>
@@ -2405,10 +2495,10 @@ class AIOHM_BOOKING_MVP_Admin {
                     </div>
 
                     <!-- PayPal Module -->
-                    <div class="aiohm-module-card <?php echo $enable_paypal ? 'is-active' : 'is-inactive'; ?>">
+                    <div class="aiohm-module-card module-payment <?php echo $enable_paypal ? 'is-active' : 'is-inactive'; ?>">
                         <div class="aiohm-module-header">
-                            <h3>🅿️ PayPal Module</h3>
-                            <label class="aiohm-toggle">
+                            <h3>PayPal Module</h3>
+                            <label class="aiohm-toggle" title="Enable or disable the PayPal payment gateway">
                                 <input type="checkbox" name="aiohm_booking_mvp_settings[enable_paypal]" value="1" <?php checked($enable_paypal,true); ?>>
                                 <span class="aiohm-toggle-slider"></span>
                             </label>
@@ -2440,25 +2530,29 @@ class AIOHM_BOOKING_MVP_Admin {
                                     <?php submit_button('Test Connection', 'secondary', 'test_paypal_connection', false); ?>
                                 </div>
                             </div>
+                            <div class="aiohm-setting-row">
+                                <label>Webhook URL (for production)</label>
+                                <code class="aiohm-webhook-url"><?php echo esc_url(home_url('/wp-json/aiohm-booking-mvp/v1/paypal-webhook')); ?></code>
+                                <small class="description">⚠️ <strong>Security Notice:</strong> Configure this webhook URL in your PayPal Developer Dashboard to receive payment notifications. Enable events: <code>CHECKOUT.ORDER.COMPLETED</code>, <code>PAYMENT.CAPTURE.COMPLETED</code></small>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- External Platform Integration -->
-            <div class="aiohm-booking-mvp-card">
-                <h3>External Platform Integration</h3>
-                <p>Sync your calendar with external booking platforms to avoid double bookings. Enter your iCal URLs in the Calendar page.</p>
+            <!-- iCal Sync Modules -->
+            <div class="aiohm-booking-mvp-modules">
                 <div class="aiohm-module-grid">
-                    <!-- Booking.com -->
-                    <div class="aiohm-module-card <?php echo $booking_com_enabled ? 'is-active' : 'is-inactive'; ?>">
+                    <!-- Booking.com Module -->
+                    <div class="aiohm-module-card module-sync <?php echo $booking_com_enabled ? 'is-active' : 'is-inactive'; ?>">
                         <div class="aiohm-module-header">
-                            <h3>Booking.com</h3>
-                            <label class="aiohm-toggle">
+                            <h3>Booking.com Sync</h3>
+                            <label class="aiohm-toggle" title="Enable or disable Booking.com iCal synchronization">
                                 <input type="checkbox" name="aiohm_booking_mvp_settings[enable_booking_com]" value="1" <?php checked($booking_com_enabled); ?>>
                                 <span class="aiohm-toggle-slider"></span>
                             </label>
                         </div>
+                        <p class="aiohm-module-description">Sync your calendar with Booking.com to avoid double bookings. Enter your iCal URL in the Calendar page.</p>
                         <div class="aiohm-module-settings">
                             <div class="aiohm-setting-row">
                                 <label>Booking.com Property ID</label>
@@ -2467,15 +2561,17 @@ class AIOHM_BOOKING_MVP_Admin {
                             </div>
                         </div>
                     </div>
-                    <!-- Airbnb -->
-                    <div class="aiohm-module-card <?php echo $airbnb_enabled ? 'is-active' : 'is-inactive'; ?>">
+
+                    <!-- Airbnb Module -->
+                    <div class="aiohm-module-card module-sync <?php echo $airbnb_enabled ? 'is-active' : 'is-inactive'; ?>">
                         <div class="aiohm-module-header">
-                            <h3>Airbnb</h3>
-                            <label class="aiohm-toggle">
+                            <h3>Airbnb Sync</h3>
+                            <label class="aiohm-toggle" title="Enable or disable Airbnb iCal synchronization">
                                 <input type="checkbox" name="aiohm_booking_mvp_settings[enable_airbnb]" value="1" <?php checked($airbnb_enabled); ?>>
                                 <span class="aiohm-toggle-slider"></span>
                             </label>
                         </div>
+                        <p class="aiohm-module-description">Sync your calendar with Airbnb to avoid double bookings. Enter your iCal URL in the Calendar page.</p>
                         <div class="aiohm-module-settings">
                             <div class="aiohm-setting-row">
                                 <label>Airbnb Property ID</label>
@@ -2487,39 +2583,19 @@ class AIOHM_BOOKING_MVP_Admin {
                 </div>
             </div>
 
-            <!-- AI Providers Section -->
-            <input type="hidden" name="aiohm_booking_mvp_settings[default_ai_provider]" value="<?php echo esc_attr($default_ai_provider); ?>">
-            <div class="aiohm-booking-mvp-ai-providers">
-                <h3>AI Booking Assistant</h3>
-                <p>Connect AI providers to enhance your booking experience with intelligent assistance for guests and automated support.</p>
-
-                <div class="aiohm-provider-grid">
+            <!-- AI Modules -->
+            <div class="aiohm-booking-mvp-modules">
+                <div class="aiohm-module-grid">
                     <?php
-                    self::render_ai_provider_card('shareai', 'ShareAI', 'Cost-effective AI solution with OpenAI compatibility. Perfect for conscious businesses looking for affordable AI assistance.', $o, $default_ai_provider);
-                    self::render_ai_provider_card('openai', 'OpenAI', 'Industry-leading AI from OpenAI. Premium service with advanced conversational abilities for sophisticated booking assistance.', $o, $default_ai_provider);
-                    self::render_ai_provider_card('gemini', 'Google Gemini', "Google's advanced AI model with strong reasoning capabilities. Great for detailed booking inquiries and event planning assistance.", $o, $default_ai_provider);
+                    self::render_ai_module_card('shareai', 'ShareAI', '🧠', 'Cost-effective AI solution with OpenAI compatibility. Perfect for conscious businesses looking for affordable AI assistance.', $o, $default_ai_provider);
+                    self::render_ai_module_card('openai', 'OpenAI', '🤖', 'Industry-leading AI from OpenAI. Premium service with advanced conversational abilities for sophisticated booking assistance.', $o, $default_ai_provider);
+                    self::render_ai_module_card('gemini', 'Google Gemini', '✨', "Google's advanced AI model with strong reasoning capabilities. Great for detailed booking inquiries and event planning assistance.", $o, $default_ai_provider);
                     ?>
                 </div>
-
-                <div class="aiohm-booking-mvp-card">
-                    <h3>AI Assistant Features</h3>
-                    <p>Once connected, your AI assistant can help with:</p>
-                    <ul>
-                        <li><strong>Guest Inquiries:</strong> Answer questions about availability, pricing, and amenities</li>
-                        <li><strong>Booking Support:</strong> Guide guests through the booking process</li>
-                        <li><strong>Event Recommendations:</strong> Suggest suitable events based on guest preferences</li>
-                        <li><strong>Policy Information:</strong> Explain cancellation policies and booking terms</li>
-                    </ul>
-                </div>
-
-                <!-- Backup Save All AI Settings Button -->
-                <div style="margin-top: 20px; text-align: center; padding: 20px; background: rgba(69, 125, 88, 0.05); border-radius: 8px; border: 1px solid var(--ohm-light-accent);">
-                    <p style="color: var(--ohm-muted-accent); font-size: 14px; margin-bottom: 10px; line-height: 1.4;">
-                        <strong>Alternative Save Method:</strong> If individual "Save" buttons don't work, click below to save all settings at once.
-                    </p>
-                    <?php submit_button('💾 Save All Settings', 'primary', 'save_all_submit', false, ['class' => 'aiohm-save-button', 'style' => 'background-color: var(--ohm-primary) !important;']); ?>
-                </div>
             </div>
+
+            <!-- Hidden field for default provider -->
+            <input type="hidden" name="aiohm_booking_mvp_settings[default_ai_provider]" value="<?php echo esc_attr($default_ai_provider); ?>">
 
             </form>
         </div>
@@ -2528,42 +2604,53 @@ class AIOHM_BOOKING_MVP_Admin {
     }
 
     /**
-     * Renders a single AI provider card to reduce code duplication in settings page.
-     * @param string $provider The provider key (e.g., 'shareai').
-     * @param string $name The display name (e.g., 'ShareAI').
-     * @param string $description The provider description.
-     * @param array $settings The current plugin settings array.
-     * @param string $default_provider The key of the current default provider.
+     * Renders a single AI provider card as a configurable module.
      */
-    private static function render_ai_provider_card($provider, $name, $description, $settings, $default_ai_provider) {
+    private static function render_ai_module_card($provider, $name, $icon, $description, $settings, $default_ai_provider) {
+        $is_enabled = !empty($settings['enable_' . $provider]);
         $is_default = ($provider === $default_ai_provider);
         $api_key = $settings[$provider . '_api_key'] ?? '';
         ?>
-        <div class="aiohm-provider-card<?php echo $is_default ? ' default-provider' : ''; ?>" data-provider="<?php echo esc_attr($provider); ?>">
-            <div class="aiohm-default-badge<?php echo $is_default ? ' active' : ''; ?>" data-provider="<?php echo esc_attr($provider); ?>">
-                <?php if ($is_default): ?>
-                    <span class="default-active">✓ Default</span>
-                <?php else: ?>
-                    <span class="make-default">Make Default</span>
-                <?php endif; ?>
+        <div class="aiohm-module-card module-ai <?php echo $is_enabled ? 'is-active' : 'is-inactive'; ?>" data-provider="<?php echo esc_attr($provider); ?>">
+            <div class="aiohm-module-header">
+                <h3><?php echo esc_html($name); ?> Module</h3>
+                <label class="aiohm-toggle" title="Enable or disable the <?php echo esc_html($name); ?> AI provider">
+                    <input type="checkbox" name="aiohm_booking_mvp_settings[enable_<?php echo esc_attr($provider); ?>]" value="1" <?php checked($is_enabled); ?>>
+                    <span class="aiohm-toggle-slider"></span>
+                </label>
             </div>
-            <div class="aiohm-provider-header">
-                <div class="aiohm-provider-icon"></div>
-                <h4 class="aiohm-provider-name"><?php echo esc_html($name); ?></h4>
-            </div>
-            <p class="aiohm-provider-description"><?php echo esc_html($description); ?></p>
+            <p class="aiohm-module-description"><?php echo esc_html($description); ?></p>
 
-            <div class="aiohm-api-key-section">
-                <label for="<?php echo esc_attr($provider); ?>_api_key">API Key:</label>
-                <div class="aiohm-api-key-wrapper">
-                    <input type="password" id="<?php echo esc_attr($provider); ?>_api_key" name="aiohm_booking_mvp_settings[<?php echo esc_attr($provider); ?>_api_key]" value="<?php echo esc_attr($api_key); ?>" placeholder="Enter your <?php echo esc_attr($name); ?> API key" class="regular-text">
-                    <button type="button" class="button button-secondary aiohm-show-hide-key" data-target="<?php echo esc_attr($provider); ?>_api_key"><span class="dashicons dashicons-visibility"></span></button>
+            <div class="aiohm-module-settings">
+                <div class="aiohm-setting-row">
+                    <label for="<?php echo esc_attr($provider); ?>_api_key">API Key:</label>
+                    <div class="aiohm-api-key-wrapper">
+                        <input type="password" id="<?php echo esc_attr($provider); ?>_api_key" name="aiohm_booking_mvp_settings[<?php echo esc_attr($provider); ?>_api_key]" value="<?php echo esc_attr($api_key); ?>" placeholder="Enter your <?php echo esc_attr($name); ?> API key" class="regular-text">
+                        <button type="button" class="button button-secondary aiohm-show-hide-key" data-target="<?php echo esc_attr($provider); ?>_api_key"><span class="dashicons dashicons-visibility"></span></button>
+                    </div>
                 </div>
+
+                <div class="aiohm-setting-row aiohm-ai-consent-row">
+                    <label class="aiohm-consent-label">
+                        <input type="checkbox" class="ai-consent-checkbox" <?php checked(!empty($settings['ai_api_consent'])); ?>>
+                        I consent to making external API calls to AI providers.
+                    </label>
+                </div>
+
                 <div class="aiohm-provider-actions">
                     <button type="button" class="button aiohm-test-api-key" data-provider="<?php echo esc_attr($provider); ?>" data-target="<?php echo esc_attr($provider); ?>_api_key">Test Connection</button>
-                    <button type="button" class="button aiohm-save-api-key" data-provider="<?php echo esc_attr($provider); ?>" data-target="<?php echo esc_attr($provider); ?>_api_key">Save</button>
+                    <button type="button" class="button aiohm-save-api-key" data-provider="<?php echo esc_attr($provider); ?>" data-target="<?php echo esc_attr($provider); ?>_api_key">Save Key</button>
+                    <button type="button" class="button button-secondary aiohm-save-consent-btn">Save Consent</button>
                 </div>
                 <div class="aiohm-connection-status" style="display: none;"></div>
+                
+                <div class="aiohm-setting-row aiohm-setting-row-spaced aiohm-default-provider-row">
+                    <?php if ($is_default): ?>
+                        <span class="aiohm-status-indicator success">✓ Default Provider</span>
+                    <?php else: ?>
+                        <button type="button" class="button button-secondary aiohm-make-default-btn" data-provider="<?php echo esc_attr($provider); ?>">Set as Default</button>
+                    <?php endif; ?>
+                </div>
             </div>
         </div>
         <?php
@@ -2682,6 +2769,319 @@ class AIOHM_BOOKING_MVP_Admin {
 
 
             </form>
+        </div>
+        <?php
+    }
+
+    public static function notification_module(){
+        // Handle form submission
+        if (isset($_POST['aiohm_notification_settings_nonce']) && wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['aiohm_notification_settings_nonce'])), 'aiohm_save_notification_settings')) {
+            if (current_user_can('manage_options')) {
+                self::save_notification_settings($_POST);
+                echo '<div class="notice notice-success"><p>Notification settings saved successfully!</p></div>';
+            }
+        }
+
+        // Get saved settings
+        $smtp_settings = get_option('aiohm_booking_mvp_smtp_settings', []);
+        $email_templates = get_option('aiohm_booking_mvp_email_templates', []);
+        
+        // Default SMTP settings
+        $smtp_host = $smtp_settings['host'] ?? '';
+        $smtp_port = $smtp_settings['port'] ?? '587';
+        $smtp_username = $smtp_settings['username'] ?? '';
+        $smtp_password = $smtp_settings['password'] ?? '';
+        $smtp_encryption = $smtp_settings['encryption'] ?? 'tls';
+        $from_email = $smtp_settings['from_email'] ?? '';
+        $from_name = $smtp_settings['from_name'] ?? '';
+        $smtp_enabled = !empty($smtp_settings['enabled']);
+        
+        // Default email templates
+        $templates = [
+            'booking_confirmation_user' => [
+                'name' => 'Booking Confirmation (User)',
+                'subject' => $email_templates['booking_confirmation_user']['subject'] ?? 'Booking Confirmation - {booking_id}',
+                'content' => $email_templates['booking_confirmation_user']['content'] ?? self::get_default_template('booking_confirmation_user')
+            ],
+            'booking_confirmation_admin' => [
+                'name' => 'Booking Confirmation (Admin)',
+                'subject' => $email_templates['booking_confirmation_admin']['subject'] ?? 'New Booking Received - {booking_id}',
+                'content' => $email_templates['booking_confirmation_admin']['content'] ?? self::get_default_template('booking_confirmation_admin')
+            ],
+            'booking_cancelled_user' => [
+                'name' => 'Booking Cancelled (User)',
+                'subject' => $email_templates['booking_cancelled_user']['subject'] ?? 'Booking Cancelled - {booking_id}',
+                'content' => $email_templates['booking_cancelled_user']['content'] ?? self::get_default_template('booking_cancelled_user')
+            ],
+            'booking_cancelled_admin' => [
+                'name' => 'Booking Cancelled (Admin)',
+                'subject' => $email_templates['booking_cancelled_admin']['subject'] ?? 'Booking Cancelled - {booking_id}',
+                'content' => $email_templates['booking_cancelled_admin']['content'] ?? self::get_default_template('booking_cancelled_admin')
+            ],
+            'payment_reminder' => [
+                'name' => 'Payment Reminder (User)',
+                'subject' => $email_templates['payment_reminder']['subject'] ?? 'Payment Reminder - {booking_id}',
+                'content' => $email_templates['payment_reminder']['content'] ?? self::get_default_template('payment_reminder')
+            ]
+        ];
+        ?>
+        <div class="wrap aiohm-booking-mvp-admin">
+            <div class="aiohm-header">
+                <div class="aiohm-header-content">
+                    <div class="aiohm-logo">
+                        <img src="<?php echo esc_url( aiohm_booking_mvp_asset_url('images/aiohm-booking-OHM_logo-black.svg') ); ?>" alt="AIOHM" class="aiohm-header-logo">
+                    </div>
+                    <div class="aiohm-header-text">
+                        <h1>Notification Module Management</h1>
+                        <p class="aiohm-tagline">Configure SMTP settings and manage email templates for user and admin notifications.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="aiohm-notification-layout">
+                <!-- Left Column - SMTP Settings -->
+                <div class="aiohm-notification-left">
+                    <form method="post" action="">
+                        <?php wp_nonce_field('aiohm_save_notification_settings', 'aiohm_notification_settings_nonce'); ?>
+                        
+                        <div class="aiohm-booking-mvp-card">
+                            <h3>📧 SMTP Configuration</h3>
+                            <p>Configure your SMTP server settings to send email notifications.</p>
+                            
+                            <div class="aiohm-smtp-settings">
+                                <div class="aiohm-setting-row">
+                                    <label>
+                                        <input type="checkbox" name="smtp_enabled" value="1" <?php checked($smtp_enabled); ?>>
+                                        Enable SMTP for Email Notifications
+                                    </label>
+                                </div>
+                                
+                                <div class="aiohm-smtp-fields" <?php echo !$smtp_enabled ? 'style="opacity:0.5;"' : ''; ?>>
+                                    <div class="aiohm-setting-row">
+                                        <label>SMTP Host</label>
+                                        <input type="text" name="smtp_host" value="<?php echo esc_attr($smtp_host); ?>" placeholder="smtp.gmail.com" class="form-control">
+                                        <small>Your SMTP server hostname</small>
+                                    </div>
+                                    
+                                    <div class="aiohm-setting-row aiohm-row-split">
+                                        <div class="aiohm-setting-col">
+                                            <label>Port</label>
+                                            <input type="number" name="smtp_port" value="<?php echo esc_attr($smtp_port); ?>" placeholder="587" class="form-control">
+                                            <small>Usually 587 (TLS) or 465 (SSL)</small>
+                                        </div>
+                                        <div class="aiohm-setting-col">
+                                            <label>Encryption</label>
+                                            <select name="smtp_encryption" class="form-control">
+                                                <option value="tls" <?php selected($smtp_encryption, 'tls'); ?>>TLS</option>
+                                                <option value="ssl" <?php selected($smtp_encryption, 'ssl'); ?>>SSL</option>
+                                                <option value="none" <?php selected($smtp_encryption, 'none'); ?>>None</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="aiohm-setting-row">
+                                        <label>Username</label>
+                                        <input type="text" name="smtp_username" value="<?php echo esc_attr($smtp_username); ?>" placeholder="your-email@gmail.com" class="form-control">
+                                        <small>Your SMTP username (usually your email)</small>
+                                    </div>
+                                    
+                                    <div class="aiohm-setting-row">
+                                        <label>Password</label>
+                                        <input type="password" name="smtp_password" value="<?php echo esc_attr($smtp_password); ?>" placeholder="Enter SMTP password" class="form-control">
+                                        <small>Your SMTP password or app password</small>
+                                    </div>
+                                    
+                                    <div class="aiohm-setting-row aiohm-row-split">
+                                        <div class="aiohm-setting-col">
+                                            <label>From Email</label>
+                                            <input type="email" name="from_email" value="<?php echo esc_attr($from_email); ?>" placeholder="noreply@yoursite.com" class="form-control">
+                                            <small>Email address to send from</small>
+                                        </div>
+                                        <div class="aiohm-setting-col">
+                                            <label>From Name</label>
+                                            <input type="text" name="from_name" value="<?php echo esc_attr($from_name); ?>" placeholder="Your Hotel Name" class="form-control">
+                                            <small>Display name for emails</small>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="aiohm-smtp-test">
+                                        <button type="button" class="button aiohm-test-smtp-btn">Test SMTP Connection</button>
+                                        <div class="aiohm-test-result"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="aiohm-save-section">
+                            <button type="submit" class="button-primary aiohm-save-btn">Save SMTP Settings</button>
+                        </div>
+                    </form>
+                </div>
+                
+                <!-- Right Column - Enhanced Email Template Manager -->
+                <div class="aiohm-notification-right">
+                    <div class="aiohm-booking-mvp-card">
+                        <h3>📧 Email Template Manager</h3>
+                        <p>Comprehensive email automation system for every stage of the guest journey.</p>
+                        
+                        <!-- Email Template Management -->
+                        <div class="aiohm-email-templates-section">
+                            <div class="aiohm-setting-row">
+                                <label>Email Template to Customize</label>
+                                <select name="email_template_selector" id="email-template-selector" class="enhanced-select">
+                                    <optgroup label="🔹 Core Booking Emails">
+                                        <option value="booking_confirmation">Booking Confirmation (guest + admin)</option>
+                                        <option value="payment_receipt">Payment Receipt (invoice/transaction)</option>
+                                        <option value="pending_payment_reminder">Pending Payment Reminder</option>
+                                        <option value="booking_approved">Booking Approved</option>
+                                        <option value="booking_declined">Booking Declined</option>
+                                        <option value="booking_update">Booking Update Notification</option>
+                                        <option value="cancellation_confirmation">Cancellation Confirmation</option>
+                                    </optgroup>
+                                    <optgroup label="🔹 Guest Experience Enhancers">
+                                        <option value="pre_arrival_reminder">Pre-Arrival Reminder (3 days before)</option>
+                                        <option value="checkin_instructions">Check-in Instructions</option>
+                                        <option value="upsell_offers">Upsell Emails (upgrades/add-ons)</option>
+                                        <option value="during_stay_message">During Stay Messages</option>
+                                        <option value="post_stay_thankyou">Post-Stay Thank You</option>
+                                        <option value="review_request">Review Request</option>
+                                        <option value="loyalty_invitation">Loyalty Program Invitation</option>
+                                    </optgroup>
+                                    <optgroup label="🔹 Admin & Staff Notifications">
+                                        <option value="new_booking_alert">New Booking Alert (admin)</option>
+                                        <option value="daily_booking_digest">Daily Booking Digest</option>
+                                        <option value="upcoming_checkins">Upcoming Check-ins/Check-outs</option>
+                                        <option value="cancellation_alert">Cancellation/Refund Alerts</option>
+                                        <option value="low_availability_alert">Low Availability Alert</option>
+                                    </optgroup>
+                                </select>
+                                <small>Select an email template to customize its content, timing, and recipients</small>
+                            </div>
+
+                            <div class="aiohm-template-editor" id="template-editor" style="display: none;">
+                                <div class="aiohm-template-settings">
+                                    <div class="aiohm-setting-row-inline">
+                                        <div class="aiohm-setting-row">
+                                            <label>Template Status</label>
+                                            <select name="template_status" class="enhanced-select">
+                                                <option value="enabled">✅ Enabled</option>
+                                                <option value="disabled">❌ Disabled</option>
+                                            </select>
+                                        </div>
+                                        <div class="aiohm-setting-row">
+                                            <label>Send Timing</label>
+                                            <select name="template_timing" class="enhanced-select">
+                                                <option value="immediate">Immediately</option>
+                                                <option value="1_hour">1 Hour Later</option>
+                                                <option value="1_day">1 Day Later</option>
+                                                <option value="3_days">3 Days Later</option>
+                                                <option value="1_week">1 Week Later</option>
+                                                <option value="custom">Custom Schedule</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="aiohm-setting-row">
+                                        <label>Email Subject Line</label>
+                                        <input type="text" name="template_subject" class="form-control" placeholder="Use merge tags like {guest_name}, {booking_id}, {property_name}">
+                                        <small>Available merge tags: {guest_name}, {booking_id}, {check_in_date}, {check_out_date}, {total_amount}, {property_name}</small>
+                                    </div>
+
+                                    <div class="aiohm-setting-row">
+                                        <label>Email Content</label>
+                                        <textarea name="template_content" rows="10" class="form-control" placeholder="Dear {guest_name},
+
+Thank you for your booking...
+
+Use merge tags to personalize the email content."></textarea>
+                                        <small>💡 <strong>Merge Tags:</strong> {guest_name}, {guest_email}, {booking_id}, {check_in_date}, {check_out_date}, {duration_nights}, {total_amount}, {deposit_amount}, {property_name}, {accommodation_type}</small>
+                                    </div>
+
+                                    <div class="aiohm-setting-row-inline">
+                                        <div class="aiohm-setting-row">
+                                            <label>Sender Name</label>
+                                            <input type="text" name="template_sender_name" class="form-control" placeholder="Your Hotel Name">
+                                        </div>
+                                        <div class="aiohm-setting-row">
+                                            <label>Reply-To Email</label>
+                                            <input type="email" name="template_reply_to" class="form-control" placeholder="reservations@yourhotel.com">
+                                        </div>
+                                    </div>
+
+                                    <div class="aiohm-setting-row">
+                                        <label>
+                                            <input type="checkbox" name="template_include_attachment">
+                                            Include PDF Attachment (invoice/confirmation)
+                                        </label>
+                                    </div>
+
+                                    <div class="aiohm-template-actions">
+                                        <button type="button" class="button button-secondary" id="preview-template">👁️ Preview Email</button>
+                                        <button type="button" class="button button-secondary" id="send-test-email">📧 Send Test Email</button>
+                                        <button type="button" class="button button-primary" id="save-template">💾 Save Template</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="aiohm-template-presets">
+                                <h5>📋 Quick Template Presets</h5>
+                                <div class="aiohm-preset-buttons">
+                                    <button type="button" class="button preset-btn" data-preset="professional">Professional</button>
+                                    <button type="button" class="button preset-btn" data-preset="friendly">Friendly</button>
+                                    <button type="button" class="button preset-btn" data-preset="luxury">Luxury</button>
+                                    <button type="button" class="button preset-btn" data-preset="minimalist">Minimalist</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="aiohm-template-variables">
+                            <h4>💡 Available Merge Tags</h4>
+                            <div class="aiohm-variables-grid">
+                                <div class="aiohm-variable-item">
+                                    <code>{guest_name}</code>
+                                    <span>Guest's full name</span>
+                                </div>
+                                <div class="aiohm-variable-item">
+                                    <code>{guest_email}</code>
+                                    <span>Guest's email address</span>
+                                </div>
+                                <div class="aiohm-variable-item">
+                                    <code>{booking_id}</code>
+                                    <span>Booking reference number</span>
+                                </div>
+                                <div class="aiohm-variable-item">
+                                    <code>{check_in_date}</code>
+                                    <span>Check-in date</span>
+                                </div>
+                                <div class="aiohm-variable-item">
+                                    <code>{check_out_date}</code>
+                                    <span>Check-out date</span>
+                                </div>
+                                <div class="aiohm-variable-item">
+                                    <code>{duration_nights}</code>
+                                    <span>Length of stay</span>
+                                </div>
+                                <div class="aiohm-variable-item">
+                                    <code>{total_amount}</code>
+                                    <span>Total booking amount</span>
+                                </div>
+                                <div class="aiohm-variable-item">
+                                    <code>{deposit_amount}</code>
+                                    <span>Required deposit</span>
+                                </div>
+                                <div class="aiohm-variable-item">
+                                    <code>{property_name}</code>
+                                    <span>Your hotel/property name</span>
+                                </div>
+                                <div class="aiohm-variable-item">
+                                    <code>{accommodation_type}</code>
+                                    <span>Room/accommodation details</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
         <?php
     }
@@ -3175,7 +3575,7 @@ class AIOHM_BOOKING_MVP_Admin {
                 $event_count = count($private_events);
                 $scroll_class = $event_count > 5 ? 'aiohm-events-scroll' : '';
                 
-                echo '<div class="aiohm-private-events-grid ' . $scroll_class . '" style="display: grid; grid-template-columns: 1fr; gap: 8px;">';
+                echo '<div class="aiohm-private-events-grid ' . esc_attr($scroll_class) . '" style="display: grid; grid-template-columns: 1fr; gap: 8px;">';
                 
                 foreach ($private_events as $date => $event) {
                     $date_obj = new DateTime($date);
@@ -3194,8 +3594,8 @@ class AIOHM_BOOKING_MVP_Admin {
                     echo '<div class="aiohm-private-event-item" style="padding: 8px 12px; background: ' . esc_attr($bg_color) . '; border-radius: 4px; border-left: 4px solid ' . esc_attr($border_color) . '; position: relative;">';
                     echo '<button class="aiohm-remove-event-btn" data-date="' . esc_attr($date) . '" style="position: absolute; top: 5px; right: 5px; background: #dc3545; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0;" title="' . esc_attr__('Remove Event', 'aiohm-booking-mvp') . '">×</button>';
                     echo '<div style="font-weight: 600; color: ' . esc_attr($text_color) . '; padding-right: 25px;">' . esc_html($formatted_date) . '</div>';
-                    echo '<div style="color: #424242; font-size: 14px; margin-top: 2px; padding-right: 25px;">' . $event_name . '</div>';
-                    echo '<div style="color: #666; font-size: 13px; margin-top: 2px; padding-right: 25px;">' . esc_html($price) . ' ' . esc_html($currency) . ' • ' . $mode_label . '</div>';
+                    echo '<div style="color: #424242; font-size: 14px; margin-top: 2px; padding-right: 25px;">' . esc_html($event_name) . '</div>';
+                    echo '<div style="color: #666; font-size: 13px; margin-top: 2px; padding-right: 25px;">' . esc_html($price) . ' ' . esc_html($currency) . ' • ' . esc_html($mode_label) . '</div>';
                     echo '</div>';
                 }
                 
@@ -3412,6 +3812,244 @@ class AIOHM_BOOKING_MVP_Admin {
             }
         } catch (Exception $e) {
             // Skip if error occurs during calendar sync
+        }
+    }
+
+    /**
+     * Save notification settings
+     */
+    private static function save_notification_settings($post_data) {
+        // Handle SMTP settings
+        if (isset($post_data['smtp_enabled'])) {
+            $smtp_settings = [
+                'enabled' => !empty($post_data['smtp_enabled']),
+                'host' => sanitize_text_field($post_data['smtp_host'] ?? ''),
+                'port' => absint($post_data['smtp_port'] ?? 587),
+                'username' => sanitize_text_field($post_data['smtp_username'] ?? ''),
+                'password' => sanitize_text_field($post_data['smtp_password'] ?? ''),
+                'encryption' => sanitize_text_field($post_data['smtp_encryption'] ?? 'tls'),
+                'from_email' => sanitize_email($post_data['from_email'] ?? ''),
+                'from_name' => sanitize_text_field($post_data['from_name'] ?? '')
+            ];
+            update_option('aiohm_booking_mvp_smtp_settings', $smtp_settings);
+        }
+        
+        // Handle email template updates
+        if (isset($post_data['template_key'])) {
+            $template_key = sanitize_key($post_data['template_key']);
+            $email_templates = get_option('aiohm_booking_mvp_email_templates', []);
+            
+            $email_templates[$template_key] = [
+                'subject' => sanitize_text_field($post_data['template_subject'] ?? ''),
+                'content' => wp_kses_post($post_data['template_content'] ?? '')
+            ];
+            
+            update_option('aiohm_booking_mvp_email_templates', $email_templates);
+        }
+    }
+    
+    /**
+     * Get default email templates
+     */
+    private static function get_default_template($type) {
+        $templates = [
+            'booking_confirmation_user' => '
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9;">
+    <div style="background-color: #ffffff; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+        <h1 style="color: #457d58; margin-bottom: 20px;">Booking Confirmation</h1>
+        <p>Dear {customer_name},</p>
+        <p>Thank you for your booking! We\'re excited to host you. Here are your booking details:</p>
+        
+        <div style="background-color: #f5f5f5; padding: 20px; border-radius: 5px; margin: 20px 0;">
+            <h3 style="color: #457d58; margin-top: 0;">Booking Details</h3>
+            <p><strong>Booking ID:</strong> {booking_id}</p>
+            <p><strong>Check-in:</strong> {check_in}</p>
+            <p><strong>Check-out:</strong> {check_out}</p>
+            <p><strong>Accommodation:</strong> {rooms}</p>
+            <p><strong>Total Amount:</strong> {total_amount}</p>
+        </div>
+        
+        <p>If you have any questions, please don\'t hesitate to contact us.</p>
+        <p>We look forward to welcoming you!</p>
+        
+        <p>Best regards,<br>
+        {site_name}</p>
+    </div>
+</div>',
+            
+            'booking_confirmation_admin' => '
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <h1 style="color: #457d58;">New Booking Received</h1>
+    <p>A new booking has been made on your website.</p>
+    
+    <div style="background-color: #f5f5f5; padding: 20px; border-radius: 5px; margin: 20px 0;">
+        <h3>Booking Details</h3>
+        <p><strong>Booking ID:</strong> {booking_id}</p>
+        <p><strong>Customer:</strong> {customer_name}</p>
+        <p><strong>Email:</strong> {customer_email}</p>
+        <p><strong>Check-in:</strong> {check_in}</p>
+        <p><strong>Check-out:</strong> {check_out}</p>
+        <p><strong>Accommodation:</strong> {rooms}</p>
+        <p><strong>Total Amount:</strong> {total_amount}</p>
+    </div>
+    
+    <p>Please log into your admin panel to manage this booking.</p>
+</div>',
+            
+            'booking_cancelled_user' => '
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <h1 style="color: #d63638;">Booking Cancelled</h1>
+    <p>Dear {customer_name},</p>
+    <p>Your booking has been cancelled as requested.</p>
+    
+    <div style="background-color: #f5f5f5; padding: 20px; border-radius: 5px; margin: 20px 0;">
+        <h3>Cancelled Booking Details</h3>
+        <p><strong>Booking ID:</strong> {booking_id}</p>
+        <p><strong>Check-in:</strong> {check_in}</p>
+        <p><strong>Check-out:</strong> {check_out}</p>
+        <p><strong>Amount:</strong> {total_amount}</p>
+    </div>
+    
+    <p>If you have any questions about your cancellation, please contact us.</p>
+    
+    <p>Best regards,<br>
+    {site_name}</p>
+</div>',
+            
+            'booking_cancelled_admin' => '
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <h1 style="color: #d63638;">Booking Cancelled</h1>
+    <p>A booking has been cancelled.</p>
+    
+    <div style="background-color: #f5f5f5; padding: 20px; border-radius: 5px; margin: 20px 0;">
+        <h3>Cancelled Booking Details</h3>
+        <p><strong>Booking ID:</strong> {booking_id}</p>
+        <p><strong>Customer:</strong> {customer_name}</p>
+        <p><strong>Email:</strong> {customer_email}</p>
+        <p><strong>Check-in:</strong> {check_in}</p>
+        <p><strong>Check-out:</strong> {check_out}</p>
+        <p><strong>Amount:</strong> {total_amount}</p>
+    </div>
+    
+    <p>Please review your calendar and manage any necessary updates.</p>
+</div>',
+            
+            'payment_reminder' => '
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <h1 style="color: #ff9800;">Payment Reminder</h1>
+    <p>Dear {customer_name},</p>
+    <p>This is a friendly reminder about your upcoming booking payment.</p>
+    
+    <div style="background-color: #f5f5f5; padding: 20px; border-radius: 5px; margin: 20px 0;">
+        <h3>Booking Details</h3>
+        <p><strong>Booking ID:</strong> {booking_id}</p>
+        <p><strong>Check-in:</strong> {check_in}</p>
+        <p><strong>Check-out:</strong> {check_out}</p>
+        <p><strong>Outstanding Amount:</strong> {total_amount}</p>
+    </div>
+    
+    <p>Please complete your payment to confirm your booking.</p>
+    
+    <p>Best regards,<br>
+    {site_name}</p>
+</div>'
+        ];
+        
+        return $templates[$type] ?? '';
+    }
+    
+    /**
+     * AJAX handler for SMTP connection testing
+     */
+    public static function ajax_test_smtp_connection() {
+        check_ajax_referer('aiohm_booking_mvp_admin_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Insufficient permissions');
+        }
+        
+        // Get SMTP settings from request
+        $smtp_host = sanitize_text_field(wp_unslash($_POST['host'] ?? ''));
+        $smtp_port = absint($_POST['port'] ?? 587);
+        $smtp_username = sanitize_text_field(wp_unslash($_POST['username'] ?? ''));
+        $smtp_password = sanitize_text_field(wp_unslash($_POST['password'] ?? ''));
+        $smtp_encryption = sanitize_text_field(wp_unslash($_POST['encryption'] ?? 'tls'));
+        $from_email = sanitize_email(wp_unslash($_POST['from_email'] ?? ''));
+        $from_name = sanitize_text_field(wp_unslash($_POST['from_name'] ?? ''));
+        
+        // Validate required fields
+        if (empty($smtp_host) || empty($smtp_port) || empty($smtp_username) || empty($smtp_password) || empty($from_email)) {
+            wp_send_json_error('All SMTP fields are required for testing.');
+        }
+        
+        // Test SMTP connection
+        try {
+            // Use WordPress PHPMailer for testing
+            if (!class_exists('PHPMailer\\PHPMailer\\PHPMailer')) {
+                require_once ABSPATH . WPINC . '/PHPMailer/PHPMailer.php';
+                require_once ABSPATH . WPINC . '/PHPMailer/SMTP.php';
+                require_once ABSPATH . WPINC . '/PHPMailer/Exception.php';
+            }
+            
+            $mail = new PHPMailer\PHPMailer\PHPMailer(true);
+            
+            // Server settings
+            $mail->isSMTP();
+            $mail->Host = $smtp_host;
+            $mail->SMTPAuth = true;
+            $mail->Username = $smtp_username;
+            $mail->Password = $smtp_password;
+            $mail->Port = $smtp_port;
+            
+            if ($smtp_encryption !== 'none') {
+                $mail->SMTPSecure = $smtp_encryption;
+            }
+            
+            // Test connection
+            $mail->SMTPDebug = 0; // Disable debug output
+            $mail->Timeout = 10; // 10 second timeout
+            
+            // Try to connect
+            if ($mail->smtpConnect()) {
+                $mail->smtpClose();
+                wp_send_json_success([
+                    'message' => 'SMTP connection successful! Your email settings are working correctly.'
+                ]);
+            } else {
+                wp_send_json_error('Failed to connect to SMTP server. Please check your settings.');
+            }
+            
+        } catch (Exception $e) {
+            wp_send_json_error('SMTP Error: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * AJAX handler for resetting email templates to default
+     */
+    public static function ajax_reset_email_template() {
+        check_ajax_referer('aiohm_booking_mvp_admin_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Insufficient permissions');
+        }
+        
+        $template_key = sanitize_key(wp_unslash($_POST['template_key'] ?? ''));
+        
+        if (empty($template_key)) {
+            wp_send_json_error('Invalid template key');
+        }
+        
+        // Get current email templates
+        $email_templates = get_option('aiohm_booking_mvp_email_templates', []);
+        
+        // Remove the specific template (this will make it use default)
+        if (isset($email_templates[$template_key])) {
+            unset($email_templates[$template_key]);
+            update_option('aiohm_booking_mvp_email_templates', $email_templates);
+            wp_send_json_success('Template reset to default successfully');
+        } else {
+            wp_send_json_error('Template not found or already using default');
         }
     }
 

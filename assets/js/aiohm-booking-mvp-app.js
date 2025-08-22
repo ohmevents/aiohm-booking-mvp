@@ -2,8 +2,7 @@
  * AIOHM Booking Frontend Application
  * Modern ES6+ implementation with enhanced error handling and performance optimization
  */
-(function() {
-  'use strict';
+ 'use strict';
 
   // Configuration and Constants
   const CONFIG = {
@@ -261,11 +260,8 @@
       const mode = 'rooms';
 
       if (mode === 'rooms') {
-        // Check for infinite wheel and use appropriate selector
-        const hasInfiniteWheel = form.querySelector('.is-original-checkbox') !== null;
-        const selectedAccommodations = form.querySelectorAll(
-          hasInfiniteWheel ? '.is-original-checkbox:checked' : '.accommodation-checkbox:checked'
-        ).length;
+        // Count selected accommodations
+        const selectedAccommodations = form.querySelectorAll('.accommodation-checkbox:checked').length;
         const privateAll = form.private_all?.checked || false;
 
         if (selectedAccommodations === 0 && !privateAll) {
@@ -312,29 +308,19 @@
     // First check all accommodation checkboxes
     const allAccommodationCheckboxes = Array.from(form.querySelectorAll('.accommodation-checkbox'));
     
-    // Check if infinite wheel is active (has cloned checkboxes)
-    const hasInfiniteWheel = form.querySelector('.is-original-checkbox') !== null;
+    // Get selected accommodation options
+    let selectedOptions = Array.from(form.querySelectorAll('.accommodation-checkbox:checked'));
     
-    // Select only original checkboxes if infinite wheel is active, otherwise all checkboxes
-    let selectedOptions = Array.from(form.querySelectorAll(
-      hasInfiniteWheel ? '.is-original-checkbox:checked' : '.accommodation-checkbox:checked'
-    ));
-
-    // For infinite wheel, ensure we only count unique rooms (not duplicates from cloning)
-    if (hasInfiniteWheel) {
-      const uniqueRooms = new Map();
-      selectedOptions.forEach(option => {
-        const roomIndex = option.dataset.originalIndex || option.value;
-        if (!uniqueRooms.has(roomIndex)) {
-          uniqueRooms.set(roomIndex, option);
-        }
-      });
-      selectedOptions = Array.from(uniqueRooms.values());
+    // Check if private_all is selected but no individual rooms are checked
+    const privateAllCheckbox = form.querySelector('#private_all_checkbox, [name="private_all"]');
+    const isPrivateAll = privateAllCheckbox && privateAllCheckbox.checked;
+    
+    // If private_all is checked but no accommodation checkboxes are selected, use all accommodations
+    if (isPrivateAll && selectedOptions.length === 0 && allAccommodationCheckboxes.length > 0) {
+        selectedOptions = allAccommodationCheckboxes;
     }
 
-
-
-    if (checkinEl && checkinEl.value && selectedOptions.length > 0) {
+    if (checkinEl && checkinEl.value && (selectedOptions.length > 0 || isPrivateAll)) {
         const checkinDate = new Date(checkinEl.value);
         // Loop through each day of the stay to calculate daily price
         for (let i = 0; i < duration; i++) {
@@ -382,10 +368,20 @@
     } else {
         // Fallback to old logic if no date is selected yet
         let baseSum = 0;
-        selectedOptions.forEach(option => { 
-          const price = parseFloat(option.dataset.price || 0) || 0;
-          baseSum += price; 
-        });
+        
+        // If private_all is checked but selectedOptions is empty, use all accommodations
+        if (isPrivateAll && selectedOptions.length === 0 && allAccommodationCheckboxes.length > 0) {
+            allAccommodationCheckboxes.forEach(option => {
+                const price = parseFloat(option.dataset.price || 0) || 0;
+                baseSum += price;
+            });
+        } else {
+            selectedOptions.forEach(option => { 
+              const price = parseFloat(option.dataset.price || 0) || 0;
+              baseSum += price; 
+            });
+        }
+        
         totalRegular = baseSum * duration;
         totalEarly = totalRegular; // No early bird without a date
     }
@@ -491,10 +487,7 @@
         if (checkoutEl && checkoutEl.value) data.check_out_date = checkoutEl.value;
 
         // Collect selected accommodations as room IDs (1-based)
-        const hasInfiniteWheel = form.querySelector('.is-original-checkbox') !== null;
-        const selectedOptions = Array.from(form.querySelectorAll(
-          hasInfiniteWheel ? '.is-original-checkbox:checked' : '.accommodation-checkbox:checked'
-        ));
+        const selectedOptions = Array.from(form.querySelectorAll('.accommodation-checkbox:checked'));
         if (selectedOptions.length > 0) {
           const roomIds = selectedOptions.map(opt => parseInt(opt.value, 10) + 1).filter(n => !isNaN(n));
           data.room_ids = roomIds;
@@ -527,24 +520,19 @@
             const checkoutUrl = window.AIOHM_BOOKING.checkout_url || '';
             const buyerEmail = result.buyer_email || data.email || '';
             
-            // Debug logging
-            console.log('Order created:', result.order_id);
-            console.log('Buyer email from API:', result.buyer_email);
-            console.log('Email from form:', data.email);
-            console.log('Final email used:', buyerEmail);
-            console.log('Checkout URL:', checkoutUrl);
+            // Order processing successful
             
             if (checkoutUrl) {
                 const url = new URL(checkoutUrl);
                 url.searchParams.set('order_id', result.order_id);
                 if (buyerEmail) url.searchParams.set('email', buyerEmail);
-                console.log('Final redirect URL:', url.toString());
+                // Redirecting to checkout page
                 window.location = url.toString();
             } else {
                 const url = new URL(window.location.href);
                 url.searchParams.set('order_id', result.order_id);
                 if (buyerEmail) url.searchParams.set('email', buyerEmail);
-                console.log('Final redirect URL:', url.toString());
+                // Redirecting to checkout page
                 window.location = url.toString().split('#')[0] + '#checkout';
             }
           }, 1500);
@@ -700,10 +688,12 @@
             accommodationCheckboxes.forEach(checkbox => {
                 checkbox.checked = this.checked;
             });
-            // Trigger change on the first checkbox to update pricing
-            if (accommodationCheckboxes[0]) {
-                accommodationCheckboxes[0].dispatchEvent(new Event('change'));
-            }
+        }
+        
+        // Directly update pricing after changing selections
+        const form = this.closest('form');
+        if (form) {
+            updatePricing(form);
         }
     });
 
@@ -718,18 +708,16 @@
     }
   }
 
-  // Infinite scrolling wheel for accommodations
-  function initInfiniteWheel() {
+  // Simple accommodation selection
+  function initAccommodationSelection() {
     const container = document.querySelector('.accommodation-wheel-container');
     if (!container) return;
 
     const list = container.querySelector('.accommodation-list');
-    const originalItems = Array.from(list.querySelectorAll('.accommodation-item'));
+    const items = Array.from(list.querySelectorAll('.accommodation-item'));
 
-    if (originalItems.length <= 3) return; // Not enough items for a good infinite scroll effect
-
-    // Add markers to original items and their checkboxes for logic filtering
-    originalItems.forEach((item, index) => {
+    // Mark all items as original (no cloning needed)
+    items.forEach((item, index) => {
         item.classList.add('is-original');
         const checkbox = item.querySelector('input[type="checkbox"]');
         if (checkbox) {
@@ -738,82 +726,41 @@
         }
     });
 
-    // Clone items for the infinite effect
-    const clonesTop = originalItems.map(item => {
-        const clone = item.cloneNode(true);
-        // Remove original markers from cloned items
-        clone.classList.remove('is-original');
-        const checkbox = clone.querySelector('input[type="checkbox"]');
-        if (checkbox) {
-            checkbox.classList.remove('is-original-checkbox');
+    // Container styling is now handled by CSS
+
+    // Initially disable room selection until dates are chosen
+    disableRoomSelection();
+  }
+
+  // Disable room selection until dates are chosen
+  function disableRoomSelection() {
+    const container = document.querySelector('.accommodation-wheel-container');
+    if (container) {
+      container.classList.add('disabled');
+      
+      // Disable all checkboxes
+      const checkboxes = container.querySelectorAll('input[type="checkbox"]');
+      checkboxes.forEach(checkbox => {
+        checkbox.disabled = true;
+        checkbox.checked = false;
+      });
+    }
+  }
+
+  // Enable room selection after dates are chosen
+  function enableRoomSelection() {
+    const container = document.querySelector('.accommodation-wheel-container');
+    if (container) {
+      container.classList.remove('disabled');
+      
+      // Enable checkboxes (but let room availability logic handle specific availability)
+      const checkboxes = container.querySelectorAll('input[type="checkbox"]');
+      checkboxes.forEach(checkbox => {
+        if (!checkbox.classList.contains('private-all-checkbox')) {
+          checkbox.disabled = false;
         }
-        return clone;
-    });
-    const clonesBottom = originalItems.map(item => {
-        const clone = item.cloneNode(true);
-        // Remove original markers from cloned items
-        clone.classList.remove('is-original');
-        const checkbox = clone.querySelector('input[type="checkbox"]');
-        if (checkbox) {
-            checkbox.classList.remove('is-original-checkbox');
-        }
-        return clone;
-    });
-
-    // Add clones to the list
-    clonesTop.forEach(clone => list.prepend(clone));
-    clonesBottom.forEach(clone => list.append(clone));
-
-    // Calculate heights for repositioning
-    const itemHeight = originalItems[0].offsetHeight + parseInt(getComputedStyle(originalItems[0]).marginBottom || '12px');
-    const originalContentHeight = originalItems.length * itemHeight;
-
-    // Start the scroll position at the beginning of the original items
-    container.scrollTop = originalContentHeight;
-
-    let isResetting = false; // Flag to prevent scroll event loops during reset
-
-    container.addEventListener('scroll', () => {
-        if (isResetting) return;
-
-        const scrollTop = container.scrollTop;
-
-        // If scrolled to the top buffer zone, jump to the equivalent position in the bottom clones
-        if (scrollTop < 1) {
-            isResetting = true;
-            container.scrollTop += originalContentHeight;
-            requestAnimationFrame(() => { isResetting = false; });
-        }
-        // If scrolled to the bottom buffer zone, jump to the equivalent position in the top clones
-        else if (scrollTop >= originalContentHeight * 2) {
-            isResetting = true;
-            container.scrollTop -= originalContentHeight;
-            requestAnimationFrame(() => { isResetting = false; });
-        }
-    });
-
-    // Sync checkbox states between original and clones
-    list.addEventListener('change', (e) => {
-        if (e.target.matches('.accommodation-checkbox')) {
-            const changedCheckbox = e.target;
-            const originalIndex = changedCheckbox.dataset.originalIndex;
-            const isChecked = changedCheckbox.checked;
-
-            const allCheckboxes = list.querySelectorAll(`.accommodation-checkbox[data-original-index="${originalIndex}"]`);
-            
-            allCheckboxes.forEach(checkbox => {
-                if (checkbox !== changedCheckbox) {
-                    checkbox.checked = isChecked;
-                }
-            });
-
-            // Update pricing after sync
-            const form = list.closest('form');
-            if (form) {
-                updatePricing(form);
-            }
-        }
-    });
+      });
+    }
   }
 
   // Date formatting utility function
@@ -883,6 +830,16 @@
       document.getElementById('checkinDisplay').value = formatDate(selectedCheckin);
       document.getElementById('checkoutHidden').value = formatDate(checkoutDate);
 
+      // Update check-in text display
+      const checkinDisplayText = document.getElementById('checkinDisplayText');
+      checkinDisplayText.textContent = selectedCheckin.toLocaleDateString('en-US', {
+        weekday: 'short',
+        year: 'numeric',
+        month: 'short',        
+        day: 'numeric'
+      });
+
+      // Update check-out text display
       const checkoutDisplay = document.getElementById('checkoutDisplay');
       checkoutDisplay.textContent = checkoutDate.toLocaleDateString('en-US', {
         weekday: 'short',
@@ -891,9 +848,15 @@
         day: 'numeric'
       });
 
+      // Enable room selection now that dates are chosen
+      enableRoomSelection();
+      
       // Update calendar visual selection
       updateCalendarSelection();
       updatePricing(calendarGrid.closest('form'));
+      
+      // Update room availability based on selected dates
+      updateRoomAvailability();
     }
 
     function updateCalendarSelection() {
@@ -1197,6 +1160,307 @@
     // Legacy validation code here if needed
   }
 
+  // Room availability management
+  function updateRoomAvailability() {
+    const checkinDate = document.getElementById('checkinDisplay')?.value;
+    const checkoutDate = document.getElementById('checkoutHidden')?.value;
+    
+    if (!checkinDate || !checkoutDate) {
+      // Reset all rooms to available if no dates selected
+      resetRoomAvailability();
+      return;
+    }
+    
+    // Get all rooms in both original and cloned items
+    const accommodationItems = document.querySelectorAll('.accommodation-item');
+    const privateEventBanner = document.getElementById('private-event-banner');
+    
+    // Check if selected dates have any private events
+    const checkinFormatted = formatDate(new Date(checkinDate));
+    const checkoutFormatted = formatDate(new Date(checkoutDate));
+    let hasPrivateEvent = false;
+    let privateEventInfo = null;
+    
+    // Check each day in the date range for private events
+    const startDate = new Date(checkinDate);
+    const endDate = new Date(checkoutDate);
+    const currentDate = new Date(startDate);
+    
+    while (currentDate < endDate) {
+      const dateString = formatDate(currentDate);
+      if (privateEvents[dateString] && privateEvents[dateString].mode === 'private_only') {
+        hasPrivateEvent = true;
+        privateEventInfo = privateEvents[dateString];
+        break;
+      }
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    // Handle private events
+    if (hasPrivateEvent && privateEventInfo) {
+      // Show private event banner
+      showPrivateEventBanner(privateEventInfo.name);
+      
+      // Disable all individual room selections
+      accommodationItems.forEach(item => {
+        item.classList.add('unavailable-private-event');
+        const checkbox = item.querySelector('input[type="checkbox"]');
+        if (checkbox && !checkbox.classList.contains('private-all-checkbox')) {
+          checkbox.disabled = true;
+          checkbox.checked = false;
+        }
+      });
+      
+      // Enable only "entire property" option
+      const privateAllCheckbox = document.querySelector('.private-all-checkbox');
+      if (privateAllCheckbox) {
+        privateAllCheckbox.disabled = false;
+      }
+    } else {
+      // Hide private event banner
+      hidePrivateEventBanner();
+      
+      // Check for special pricing events and update room prices
+      updateRoomPricesForSpecialEvents(checkinDate, checkoutDate, accommodationItems);
+      
+      // Check individual room availability based on bookings and admin blocks
+      checkIndividualRoomAvailability(checkinDate, checkoutDate, accommodationItems);
+    }
+  }
+  
+  function resetRoomAvailability() {
+    const accommodationItems = document.querySelectorAll('.accommodation-item');
+    hidePrivateEventBanner();
+    
+    accommodationItems.forEach(item => {
+      item.classList.remove('unavailable-private-event', 'unavailable-booked', 'has-special-pricing');
+      const checkbox = item.querySelector('input[type="checkbox"]');
+      const priceElement = item.querySelector('.accommodation-price');
+      
+      if (checkbox) {
+        checkbox.disabled = false;
+        
+        // Restore original price if it was changed
+        if (checkbox.dataset.originalPrice) {
+          checkbox.dataset.price = checkbox.dataset.originalPrice;
+          
+          if (priceElement) {
+            const currency = priceElement.textContent.split(' ')[0];
+            priceElement.textContent = `${currency} ${parseFloat(checkbox.dataset.originalPrice).toFixed(2)}`;
+            priceElement.classList.remove('special-price');
+          }
+          
+          delete checkbox.dataset.originalPrice;
+        }
+      }
+      
+      // Remove special pricing indicators
+      const indicator = item.querySelector('.special-pricing-indicator');
+      if (indicator) {
+        indicator.remove();
+      }
+    });
+    
+    // Disable room selection when no dates are selected
+    disableRoomSelection();
+  }
+  
+  function showPrivateEventBanner(eventName) {
+    let banner = document.getElementById('private-event-banner');
+    if (!banner) {
+      banner = document.createElement('div');
+      banner.id = 'private-event-banner';
+      banner.className = 'private-event-banner';
+      
+      const accommodationSection = document.querySelector('.accommodation-wheel-container, .accommodation-section');
+      if (accommodationSection) {
+        accommodationSection.insertBefore(banner, accommodationSection.firstChild);
+      }
+    }
+    
+    banner.innerHTML = `
+      <div class="banner-content">
+        <strong>🎉 ${eventName}</strong>
+        <p>Private event period - Only entire property booking available</p>
+      </div>
+    `;
+    banner.style.display = 'block';
+  }
+  
+  function hidePrivateEventBanner() {
+    const banner = document.getElementById('private-event-banner');
+    if (banner) {
+      banner.style.display = 'none';
+    }
+  }
+  
+  function updateRoomPricesForSpecialEvents(checkinDate, checkoutDate, accommodationItems) {
+    // Check if any dates in the range have special pricing events
+    const startDate = new Date(checkinDate);
+    const endDate = new Date(checkoutDate);
+    const currentDate = new Date(startDate);
+    
+    let hasSpecialPricing = false;
+    let specialPrice = null;
+    let eventName = null;
+    
+    // Look for special pricing events in the date range
+    while (currentDate < endDate) {
+      const dateString = formatDate(currentDate);
+      if (privateEvents[dateString] && privateEvents[dateString].mode === 'special_pricing') {
+        hasSpecialPricing = true;
+        specialPrice = privateEvents[dateString].price;
+        eventName = privateEvents[dateString].name;
+        break;
+      }
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    // Update room prices if special pricing is found
+    accommodationItems.forEach(item => {
+      const checkbox = item.querySelector('input[type="checkbox"]');
+      const priceElement = item.querySelector('.accommodation-price');
+      
+      if (!checkbox || !priceElement) return;
+      
+      if (hasSpecialPricing && specialPrice) {
+        // Store original price if not already stored
+        if (!checkbox.dataset.originalPrice) {
+          checkbox.dataset.originalPrice = checkbox.dataset.price;
+        }
+        
+        // Update to special price
+        checkbox.dataset.price = specialPrice;
+        
+        // Update display price with currency
+        const currency = priceElement.textContent.split(' ')[0]; // Get currency symbol
+        priceElement.textContent = `${currency} ${parseFloat(specialPrice).toFixed(2)}`;
+        priceElement.classList.add('special-price');
+        
+        // Add visual indicator
+        item.classList.add('has-special-pricing');
+        
+        // Add special pricing indicator if not already present
+        let indicator = item.querySelector('.special-pricing-indicator');
+        if (!indicator) {
+          indicator = document.createElement('span');
+          indicator.className = 'special-pricing-indicator';
+          indicator.textContent = '🎉 Special Price';
+          item.querySelector('.accommodation-item-content').appendChild(indicator);
+        }
+        indicator.textContent = eventName ? `🎉 ${eventName}` : '🎉 Special Price';
+      } else {
+        // Restore original price
+        if (checkbox.dataset.originalPrice) {
+          checkbox.dataset.price = checkbox.dataset.originalPrice;
+          
+          // Update display price
+          const currency = priceElement.textContent.split(' ')[0];
+          priceElement.textContent = `${currency} ${parseFloat(checkbox.dataset.originalPrice).toFixed(2)}`;
+          priceElement.classList.remove('special-price');
+          
+          // Remove visual indicators
+          item.classList.remove('has-special-pricing');
+          const indicator = item.querySelector('.special-pricing-indicator');
+          if (indicator) {
+            indicator.remove();
+          }
+        }
+      }
+    });
+    
+    // Update pricing calculation if form exists
+    const form = document.querySelector('form');
+    if (form) {
+      updatePricing(form);
+    }
+  }
+  
+  function checkIndividualRoomAvailability(checkinDate, checkoutDate, accommodationItems) {
+    // Skip if no AIOHM_BOOKING API available
+    if (typeof AIOHM_BOOKING === 'undefined' || !AIOHM_BOOKING.rest) {
+      // Enable all rooms if API not available
+      accommodationItems.forEach(item => {
+        item.classList.remove('unavailable-private-event', 'unavailable-booked');
+        const checkbox = item.querySelector('input[type="checkbox"]');
+        if (checkbox && !checkbox.classList.contains('private-all-checkbox')) {
+          checkbox.disabled = false;
+        }
+      });
+      return;
+    }
+    
+    const fromDate = formatDate(new Date(checkinDate));
+    const toDate = formatDate(new Date(checkoutDate));
+    
+    // Fetch detailed availability for room-level checking
+    fetch(AIOHM_BOOKING.rest + '/availability?from=' + fromDate + '&to=' + toDate + '&detailed=1')
+      .then(response => {
+        if (response.ok) {
+          return response.json();
+        } else {
+          throw new Error('Failed to fetch room availability');
+        }
+      })
+      .then(data => {
+        // Update each room based on availability data
+        accommodationItems.forEach(item => {
+          const checkbox = item.querySelector('input[type="checkbox"]');
+          if (!checkbox || checkbox.classList.contains('private-all-checkbox')) return;
+          
+          const roomId = getRoomIdFromCheckbox(checkbox);
+          if (!roomId) return;
+          
+          // Check if this room is blocked for any day in the date range
+          const isRoomBlocked = isRoomBlockedInDateRange(roomId, fromDate, toDate, data.blocked_rooms || {});
+          
+          if (isRoomBlocked) {
+            item.classList.add('unavailable-booked');
+            item.classList.remove('unavailable-private-event');
+            checkbox.disabled = true;
+            checkbox.checked = false;
+          } else {
+            item.classList.remove('unavailable-private-event', 'unavailable-booked');
+            checkbox.disabled = false;
+          }
+        });
+      })
+      .catch(error => {
+        // On error, enable all rooms as fallback
+        accommodationItems.forEach(item => {
+          item.classList.remove('unavailable-private-event', 'unavailable-booked');
+          const checkbox = item.querySelector('input[type="checkbox"]');
+          if (checkbox && !checkbox.classList.contains('private-all-checkbox')) {
+            checkbox.disabled = false;
+          }
+        });
+      });
+  }
+  
+  function getRoomIdFromCheckbox(checkbox) {
+    // Extract room ID from checkbox value or data attribute
+    // Convert from 0-based frontend index to 1-based admin calendar room ID
+    const frontendIndex = parseInt(checkbox.value) || parseInt(checkbox.dataset.roomId) || null;
+    return frontendIndex !== null ? frontendIndex + 1 : null;
+  }
+  
+  function isRoomBlockedInDateRange(roomId, fromDate, toDate, blockedRooms) {
+    // Check if the specific room is blocked for any date in the range
+    const startDate = new Date(fromDate);
+    const endDate = new Date(toDate);
+    const currentDate = new Date(startDate);
+    
+    while (currentDate < endDate) {
+      const dateString = formatDate(currentDate);
+      if (blockedRooms[roomId] && blockedRooms[roomId][dateString]) {
+        return true;
+      }
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    return false;
+  }
+
   // Enhanced initialization with error boundaries
   function init() {
     try {
@@ -1221,7 +1485,8 @@
         { name: 'Private Property Toggle', init: initPrivatePropertyToggle },
         { name: 'Visual Calendar', init: initVisualCalendar },
         { name: 'Simple Date Validation', init: initSimpleDateValidation },
-        { name: 'Infinite Accommodation Wheel', init: initInfiniteWheel }
+        { name: 'Accommodation Selection', init: initAccommodationSelection },
+        { name: 'Room Availability Management', init: function() { updateRoomAvailability(); } }
       ];
 
       components.forEach(({ name, init }) => {
@@ -1278,14 +1543,10 @@
     }
   };
 
-  // Debug mode detection
-  if (window.location.search.includes('aiohm_debug=1') || localStorage.getItem('aiohm_debug')) {
-    window.AIOHM_BOOKING_DEBUG = window.AIOHM_BOOKING_UI;
-    // Debug mode enabled
-  }
+  // Production build - debug mode removed
   // Performance monitoring (if available)
   if ('performance' in window && performance.mark) {
     performance.mark('aiohm-booking-mvp-init-complete');
   }
 
-})();
+  init();
