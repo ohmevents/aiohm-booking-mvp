@@ -1,4 +1,22 @@
 <?php
+/**
+ * Admin Management System
+ *
+ * Handles WordPress admin interface, menu creation, settings management,
+ * and administrative functionality for the AIOHM Booking MVP plugin.
+ *
+ * @package    AIOHM\BookingMVP
+ * @subpackage Admin
+ * @since      1.0.0
+ * @author     AIOHM Team
+ * @copyright  2024 AIOHM
+ * @license    GPL-2.0-or-later
+ */
+
+// Prevent direct access.
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
 
 namespace AIOHM\BookingMVP\Admin;
 
@@ -10,16 +28,29 @@ use AIOHM\BookingMVP\Core\Settings;
 use AIOHM\BookingMVP\Core\Config;
 use AIOHM\BookingMVP\Core\Assets;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit; }
-
+/**
+ * Admin Management Class
+ *
+ * Provides administrative functionality including menu management,
+ * settings handling, and admin interface controls.
+ *
+ * @since 1.0.0
+ */
 // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery
 // phpcs:disable WordPress.DB.DirectDatabaseQuery.NoCaching
 // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 // phpcs:disable WordPress.Security.NonceVerification.Missing
 // phpcs:disable WordPress.Security.NonceVerification.Recommended
-// Reason: This class manages custom booking tables and requires direct database access for admin operations
+// Reason: This class manages custom booking tables and requires direct database access for admin operations.
 class Admin {
+	/**
+	 * Initialize the Admin class
+	 *
+	 * Sets up WordPress admin hooks and filters for the booking system.
+	 *
+	 * @since 1.0.0
+	 * @return void
+	 */
 	public static function init() {
 		add_action( 'admin_menu', array( __CLASS__, 'menu' ) );
 		add_action( 'admin_init', array( __CLASS__, 'admin_init_hooks' ) );
@@ -27,13 +58,14 @@ class Admin {
 		add_action( 'admin_init', array( __CLASS__, 'handle_custom_settings_save' ) );
 		add_action( 'admin_init', array( __CLASS__, 'handle_accommodation_details_save' ) );
 
-		// Add settings link to plugin page
+		// Add settings link to plugin page.
 		add_filter( 'plugin_action_links_' . plugin_basename( AIOHM_BOOKING_MVP_FILE ), array( __CLASS__, 'add_settings_link' ) );
 	}
 
 	/**
-	 * Add settings link to plugin action links.
+	 * Add settings link to plugin action links
 	 *
+	 * @since 1.0.0
 	 * @param array $links The existing links.
 	 * @return array The modified links.
 	 */
@@ -43,16 +75,22 @@ class Admin {
 		return $links;
 	}
 
+	/**
+	 * Create admin menu and submenus
+	 *
+	 * @since 1.0.0
+	 * @return void
+	 */
 	public static function menu() {
 		$menu_icon = self::get_menu_icon();
 		add_menu_page( 'AIOHM Booking', 'AIOHM Booking', 'manage_options', 'aiohm-booking-mvp', array( __CLASS__, 'dash' ), $menu_icon, 27 );
 		add_submenu_page( 'aiohm-booking-mvp', 'Dashboard', 'Dashboard', 'manage_options', 'aiohm-booking-mvp', array( __CLASS__, 'dash' ) );
 		add_submenu_page( 'aiohm-booking-mvp', 'Settings', 'Settings', 'manage_options', 'aiohm-booking-mvp-settings', array( __CLASS__, 'settings' ) );
 
-		// Get settings to determine which menu items to show
+		// Get settings to determine which menu items to show.
 		$settings = Settings::get_all();
 
-		// Default to enabled if settings are missing (initial setup)
+		// Default to enabled if settings are missing (initial setup).
 		$rooms_enabled         = ! empty( $settings['enable_rooms'] ) || empty( $settings );
 		$notifications_enabled = ! empty( $settings['enable_notifications'] );
 
@@ -66,26 +104,32 @@ class Admin {
 			add_submenu_page( 'aiohm-booking-mvp', 'Notification', 'Notification', 'manage_options', 'aiohm-booking-mvp-notifications', array( __CLASS__, 'notification_module' ) );
 		}
 
-		// Always show help page
+		// Always show help page.
 		add_submenu_page( 'aiohm-booking-mvp', 'Get Help', 'Get Help', 'manage_options', 'aiohm-booking-mvp-get-help', array( __CLASS__, 'help_page' ) );
 	}
+	/**
+	 * Initialize admin hooks and AJAX handlers
+	 *
+	 * @since 1.0.0
+	 * @return void
+	 */
 	public static function admin_init_hooks() {
 		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_admin_styles' ) );
-		// Backup CSS loading via admin_head for troubleshooting
+		// Backup CSS loading via admin_head for troubleshooting.
 		add_action( 'admin_head', array( __CLASS__, 'backup_admin_styles' ) );
 
-		// AJAX handlers for AI API settings
+		// AJAX handlers for AI API settings.
 		add_action( 'wp_ajax_aiohm_booking_mvp_test_api_key', array( __CLASS__, 'ajax_test_api_key' ) );
 		add_action( 'wp_ajax_aiohm_booking_mvp_save_api_key', array( __CLASS__, 'ajax_save_api_key' ) );
 		add_action( 'wp_ajax_aiohm_booking_mvp_set_default_provider', array( __CLASS__, 'ajax_set_default_provider' ) );
-		// AJAX handler for quick module toggle save
+		// AJAX handler for quick module toggle save.
 		add_action( 'wp_ajax_aiohm_booking_mvp_toggle_module', array( __CLASS__, 'ajax_toggle_module' ) );
 
-		// AJAX handler for individual accommodation saves
+		// AJAX handler for individual accommodation saves.
 		add_action( 'wp_ajax_aiohm_booking_mvp_save_ai_consent', array( __CLASS__, 'ajax_save_ai_consent' ) );
 		add_action( 'wp_ajax_aiohm_booking_mvp_save_individual_accommodation', array( __CLASS__, 'ajax_save_individual_accommodation' ) );
 
-		// AJAX handlers for calendar occupancy management
+		// AJAX handlers for calendar occupancy management.
 		add_action( 'wp_ajax_aiohm_booking_mvp_block_date', array( __CLASS__, 'ajax_block_date' ) );
 		add_action( 'wp_ajax_aiohm_booking_mvp_unblock_date', array( __CLASS__, 'ajax_unblock_date' ) );
 		add_action( 'wp_ajax_aiohm_booking_mvp_get_date_info', array( __CLASS__, 'ajax_get_date_info' ) );
@@ -97,7 +141,7 @@ class Admin {
 		add_action( 'wp_ajax_aiohm_booking_mvp_sync_calendar', array( __CLASS__, 'ajax_sync_calendar' ) );
 		add_action( 'wp_ajax_aiohm_booking_mvp_ai_calendar_insights', array( __CLASS__, 'ajax_calendar_ai_insights' ) );
 
-		// AJAX handler for AI table queries
+		// AJAX handler for AI table queries.
 		add_action( 'wp_ajax_aiohm_booking_mvp_ai_table_query', array( __CLASS__, 'ajax_ai_table_query' ) );
 
 		// AJAX handler for AI order queries
@@ -1240,7 +1284,7 @@ class Admin {
 			$ai_enabled = ! empty( $settings['enable_shareai'] ) || ! empty( $settings['enable_openai'] ) || ! empty( $settings['enable_gemini'] );
 
 			if ( $ai_enabled ) {
-				self::renderAIOrderInsights();
+				self::render_ai_order_insights();
 			}
 			?>
 		</div>
@@ -3320,7 +3364,13 @@ Use merge tags to personalize the email content."></textarea>
 	/**
 	 * Render AI Order Insights section
 	 */
-	private static function renderAIOrderInsights() {
+	/**
+	 * Render AI order insights section
+	 *
+	 * @since 1.0.0
+	 * @return void
+	 */
+	private static function render_ai_order_insights() {
 		// Get default AI provider and map to display name
 		$settings         = Settings::get_all();
 		$default_provider = $settings['default_ai_provider'] ?? 'shareai';

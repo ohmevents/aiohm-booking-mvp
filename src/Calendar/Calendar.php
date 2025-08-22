@@ -1,4 +1,22 @@
 <?php
+/**
+ * Calendar Management System
+ *
+ * Professional calendar management system for booking and room availability visualization.
+ * Handles different period types, room management, and booking data integration.
+ *
+ * @package    AIOHM\BookingMVP
+ * @subpackage Calendar
+ * @since      1.0.0
+ * @author     AIOHM Team
+ * @copyright  2024 AIOHM
+ * @license    GPL-2.0-or-later
+ */
+
+// Prevent direct access.
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
 
 namespace AIOHM\BookingMVP\Calendar;
 
@@ -6,44 +24,33 @@ use AIOHM\BookingMVP\Core\Settings;
 use AIOHM\BookingMVP\Core\Config;
 
 /**
- * AIOHM Booking Calendar Class
- *
- * Professional calendar management system for booking and room availability visualization.
- * Handles different period types, room management, and booking data integration.
- *
- * @package AIOHM\BookingMVP\Calendar
- * @since   1.0.0
- */
-
-if ( ! defined( 'ABSPATH' ) ) {
-	exit; }
-
-/**
  * AIOHM Booking Calendar - Advanced Calendar System
  *
  * Provides comprehensive calendar functionality with support for multiple period types,
  * room management, booking visualization, and administrative controls.
+ *
+ * @since 1.0.0
  */
 // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery
 // phpcs:disable WordPress.DB.DirectDatabaseQuery.NoCaching
 // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-// Reason: This class manages custom booking tables and requires direct database access for calendar operations
+// Reason: This class manages custom booking tables and requires direct database access for calendar operations.
 class Calendar {
 
-	// Calendar Configuration Constants
+	// Calendar Configuration Constants.
 	const ALL_ROOM_TYPES = '0';
 
-	// Period Type Constants
+	// Period Type Constants.
 	const PERIOD_TYPE_MONTH   = 'month';
 	const PERIOD_TYPE_QUARTER = 'quarter';
 	const PERIOD_TYPE_YEAR    = 'year';
 	const PERIOD_TYPE_CUSTOM  = 'custom';
 
-	// Default Configuration Values
+	// Default Configuration Values.
 	const DEFAULT_ROOM_COUNT  = 7;
 	const DEFAULT_PERIOD_DAYS = 6;
 
-	// Calendar Properties
+	// Calendar Properties.
 	private $period_type;
 	private $period_page;
 	private $custom_period_from;
@@ -62,20 +69,21 @@ class Calendar {
 	 * @param array $attributes Configuration attributes for calendar setup
 	 */
 	public function __construct( $attributes = array() ) {
-		$default_attributes = $this->getDefaultAttributes();
+		$default_attributes = $this->get_default_attributes();
 		$attributes         = array_merge( $default_attributes, $attributes );
-		$attributes         = $this->parseFilterAttributes( $attributes );
+		$attributes         = $this->parse_filter_attributes( $attributes );
 
-		$this->setCalendarProperties( $attributes );
-		$this->initializeCalendar();
+		$this->set_calendar_properties( $attributes );
+		$this->initialize_calendar();
 	}
 
 	/**
 	 * Get default calendar attributes
 	 *
-	 * @return array Default configuration attributes
+	 * @since 1.0.0
+	 * @return array Default configuration attributes.
 	 */
-	private function getDefaultAttributes() {
+	private function get_default_attributes() {
 		return array(
 			'room_type_id'       => self::ALL_ROOM_TYPES,
 			'period_type'        => self::PERIOD_TYPE_CUSTOM,
@@ -88,9 +96,11 @@ class Calendar {
 	/**
 	 * Set calendar properties from attributes
 	 *
-	 * @param array $attributes Parsed configuration attributes
+	 * @since 1.0.0
+	 * @param array $attributes Parsed configuration attributes.
+	 * @return void
 	 */
-	private function setCalendarProperties( $attributes ) {
+	private function set_calendar_properties( $attributes ) {
 		$this->room_type_id = absint( $attributes['room_type_id'] );
 		$this->period_type  = $attributes['period_type'];
 		$this->period_page  = $attributes['period_page'];
@@ -103,30 +113,36 @@ class Calendar {
 
 	/**
 	 * Initialize calendar components
+	 *
+	 * @since 1.0.0
+	 * @return void
 	 */
-	private function initializeCalendar() {
-		$this->setupCalendarPeriod();
-		$this->setupRoomConfiguration();
-		$this->setupBookingData();
+	private function initialize_calendar() {
+		$this->setup_calendar_period();
+		$this->setup_room_configuration();
+		$this->setup_booking_data();
 	}
 
 	/**
 	 * Setup calendar period based on type and configuration
+	 *
+	 * @since 1.0.0
+	 * @return void
 	 */
-	private function setupCalendarPeriod() {
+	private function setup_calendar_period() {
 		switch ( $this->period_type ) {
 			case self::PERIOD_TYPE_QUARTER:
-				$this->period = $this->createQuarterPeriod( $this->period_page );
+				$this->period = $this->create_quarter_period( $this->period_page );
 				break;
 			case self::PERIOD_TYPE_YEAR:
-				$this->period = $this->createYearPeriod( $this->period_page );
+				$this->period = $this->create_year_period( $this->period_page );
 				break;
 			case self::PERIOD_TYPE_CUSTOM:
-				$this->period = $this->createCustomPeriod();
+				$this->period = $this->create_custom_period();
 				break;
 			case self::PERIOD_TYPE_MONTH:
 			default:
-				$this->period = $this->createMonthPeriod( $this->period_page );
+				$this->period = $this->create_month_period( $this->period_page );
 				break;
 		}
 
@@ -138,10 +154,11 @@ class Calendar {
 	/**
 	 * Create quarter period for calendar display
 	 *
-	 * @param int $quarter_page Quarter navigation offset
-	 * @return \DatePeriod Quarter period object
+	 * @since 1.0.0
+	 * @param int $quarter_page Quarter navigation offset.
+	 * @return \DatePeriod Quarter period object.
 	 */
-	private function createQuarterPeriod( $quarter_page = 0 ) {
+	private function create_quarter_period( $quarter_page = 0 ) {
 		$current_quarter = ceil( current_time( 'n' ) / 3 );
 		$target_quarter  = $current_quarter + $quarter_page;
 		$year            = current_time( 'Y' ) + floor( $target_quarter / 4 );
@@ -154,34 +171,36 @@ class Calendar {
 		$last_day  = new \DateTime( $year . '-' . sprintf( '%02d', $last_month ) . '-01' );
 		$last_day->modify( 'last day of this month' );
 
-		return $this->createDatePeriod( $first_day, $last_day, true );
+		return $this->create_date_period( $first_day, $last_day, true );
 	}
 
 	/**
 	 * Create year period for calendar display
 	 *
-	 * @param int $year_page Year navigation offset
-	 * @return \DatePeriod Year period object
+	 * @since 1.0.0
+	 * @param int $year_page Year navigation offset.
+	 * @return \DatePeriod Year period object.
 	 */
-	private function createYearPeriod( $year_page = 0 ) {
+	private function create_year_period( $year_page = 0 ) {
 		$current_year = current_time( 'Y' );
 		$target_year  = $current_year + $year_page;
 		$first_day    = new \DateTime( 'first day of January ' . $target_year );
 		$last_day     = new \DateTime( 'last day of December ' . $target_year );
 
-		return $this->createDatePeriod( $first_day, $last_day, true );
+		return $this->create_date_period( $first_day, $last_day, true );
 	}
 
 	/**
 	 * Create custom period for calendar display
 	 *
-	 * @return \DatePeriod Custom period object
+	 * @since 1.0.0
+	 * @return \DatePeriod Custom period object.
 	 */
-	private function createCustomPeriod() {
+	private function create_custom_period() {
 		$start_date = $this->custom_period_from;
 		$end_date   = $this->custom_period_to;
 
-		// Ensure logical date order
+		// Ensure logical date order.
 		if ( $start_date > $end_date ) {
 			list($start_date, $end_date) = array( $end_date, $start_date );
 		}
@@ -192,10 +211,11 @@ class Calendar {
 	/**
 	 * Create month period for calendar display
 	 *
-	 * @param int $month_page Month navigation offset
-	 * @return \DatePeriod Month period object
+	 * @since 1.0.0
+	 * @param int $month_page Month navigation offset.
+	 * @return \DatePeriod Month period object.
 	 */
-	private function createMonthPeriod( $month_page = 0 ) {
+	private function create_month_period( $month_page = 0 ) {
 		$base_date = new \DateTime( 'first day of this month' );
 		$direction = $month_page < 0 ? '-' : '+';
 
@@ -205,18 +225,19 @@ class Calendar {
 		$last_day = clone $first_day;
 		$last_day->modify( 'last day of this month' );
 
-		return $this->createDatePeriod( $first_day, $last_day, true );
+		return $this->create_date_period( $first_day, $last_day, true );
 	}
 
 	/**
 	 * Create date period with optional end date inclusion
 	 *
-	 * @param \DateTime $start_date Period start date
-	 * @param \DateTime $end_date Period end date
-	 * @param bool      $include_end Whether to include end date
-	 * @return \DatePeriod Configured date period
+	 * @since 1.0.0
+	 * @param \DateTime $start_date Period start date.
+	 * @param \DateTime $end_date Period end date.
+	 * @param bool      $include_end Whether to include end date.
+	 * @return \DatePeriod Configured date period.
 	 */
-	private function createDatePeriod( $start_date, $end_date, $include_end = false ) {
+	private function create_date_period( $start_date, $end_date, $include_end = false ) {
 		$interval = new \DateInterval( 'P1D' );
 
 		if ( $include_end ) {
@@ -230,8 +251,11 @@ class Calendar {
 
 	/**
 	 * Setup room configuration and accommodation details
+	 *
+	 * @since 1.0.0
+	 * @return void
 	 */
-	private function setupRoomConfiguration() {
+	private function setup_room_configuration() {
 		$settings   = get_option( 'aiohm_booking_mvp_settings', array() );
 		$room_count = intval( $settings['available_rooms'] ?? self::DEFAULT_ROOM_COUNT );
 
@@ -241,7 +265,7 @@ class Calendar {
 		$this->room_posts = array();
 
 		for ( $room_number = 1; $room_number <= $room_count; $room_number++ ) {
-			$room_data          = $this->createRoomData( $room_number, $accommodation_details, $product_names );
+			$room_data          = $this->create_room_data( $room_number, $accommodation_details, $product_names );
 			$this->room_posts[] = $room_data;
 		}
 	}
@@ -249,12 +273,13 @@ class Calendar {
 	/**
 	 * Create room data object
 	 *
-	 * @param int   $room_number Room number identifier
-	 * @param array $accommodation_details Custom accommodation configuration
-	 * @param array $product_names Product naming configuration
-	 * @return \stdClass Room data object
+	 * @since 1.0.0
+	 * @param int   $room_number Room number identifier.
+	 * @param array $accommodation_details Custom accommodation configuration.
+	 * @param array $product_names Product naming configuration.
+	 * @return \stdClass Room data object.
 	 */
-	private function createRoomData( $room_number, $accommodation_details, $product_names ) {
+	private function create_room_data( $room_number, $accommodation_details, $product_names ) {
 		$room     = new \stdClass();
 		$room->ID = $room_number;
 
@@ -273,37 +298,41 @@ class Calendar {
 
 	/**
 	 * Setup booking data from database orders
+	 *
+	 * @since 1.0.0
+	 * @return void
 	 */
-	private function setupBookingData() {
+	private function setup_booking_data() {
 		global $wpdb;
 
 		$orders_table = $wpdb->prefix . 'aiohm_booking_mvp_order';
 		$period_start = $this->period_start_date->format( 'Y-m-d' );
 		$period_end   = $this->period_end_date->format( 'Y-m-d' );
 
-		$booking_orders     = $this->fetchBookingOrders( $orders_table, $period_start, $period_end );
+		$booking_orders     = $this->fetch_booking_orders( $orders_table, $period_start, $period_end );
 		$this->booking_data = array();
 
 		$explicit_room_assignments = get_option( 'aiohm_booking_mvp_order_rooms', array() );
 
 		foreach ( $booking_orders as $order ) {
-			$this->processBookingOrder( $order, $explicit_room_assignments );
+			$this->process_booking_order( $order, $explicit_room_assignments );
 		}
 	}
 
 	/**
 	 * Fetch booking orders from database
 	 *
-	 * @param string $table_name Orders table name
-	 * @param string $start_date Period start date
-	 * @param string $end_date Period end date
-	 * @return array Booking orders data
+	 * @since 1.0.0
+	 * @param string $table_name Orders table name.
+	 * @param string $start_date Period start date.
+	 * @param string $end_date Period end date.
+	 * @return array Booking orders data.
 	 */
-	private function fetchBookingOrders( $table_name, $start_date, $end_date ) {
+	private function fetch_booking_orders( $table_name, $start_date, $end_date ) {
 		global $wpdb;
 
-		// Safe SQL: Table name is constructed via wpdb->prefix concatenation at line 269
-        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// Safe SQL: Table name is constructed via wpdb->prefix concatenation at line 269.
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		return $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT * FROM {$table_name}
@@ -319,48 +348,52 @@ class Calendar {
 	/**
 	 * Process individual booking order
 	 *
-	 * @param object $order Booking order data
-	 * @param array  $explicit_assignments Explicit room assignments
+	 * @since 1.0.0
+	 * @param object $order Booking order data.
+	 * @param array  $explicit_assignments Explicit room assignments.
+	 * @return void
 	 */
-	private function processBookingOrder( $order, $explicit_assignments ) {
-		if ( ! $this->isValidOrderDates( $order ) ) {
+	private function process_booking_order( $order, $explicit_assignments ) {
+		if ( ! $this->is_valid_order_dates( $order ) ) {
 			return;
 		}
 
 		$check_in_date  = new \DateTime( $order->check_in_date );
 		$check_out_date = new \DateTime( $order->check_out_date );
-		$assigned_rooms = $this->determineRoomAssignments( $order, $explicit_assignments );
+		$assigned_rooms = $this->determine_room_assignments( $order, $explicit_assignments );
 
 		foreach ( $assigned_rooms as $room_id ) {
-			$this->assignOrderToRoom( $room_id, $check_in_date, $check_out_date, $order );
+			$this->assign_order_to_room( $room_id, $check_in_date, $check_out_date, $order );
 		}
 	}
 
 	/**
 	 * Validate order dates
 	 *
-	 * @param object $order Booking order data
-	 * @return bool Whether dates are valid
+	 * @since 1.0.0
+	 * @param object $order Booking order data.
+	 * @return bool Whether dates are valid.
 	 */
-	private function isValidOrderDates( $order ) {
+	private function is_valid_order_dates( $order ) {
 		return ! empty( $order->check_in_date ) && ! empty( $order->check_out_date );
 	}
 
 	/**
 	 * Determine room assignments for booking order
 	 *
-	 * @param object $order Booking order data
-	 * @param array  $explicit_assignments Explicit room assignments
-	 * @return array Room assignment IDs
+	 * @since 1.0.0
+	 * @param object $order Booking order data.
+	 * @param array  $explicit_assignments Explicit room assignments.
+	 * @return array Room assignment IDs.
 	 */
-	private function determineRoomAssignments( $order, $explicit_assignments ) {
+	private function determine_room_assignments( $order, $explicit_assignments ) {
 		$order_id = intval( $order->id );
 
 		if ( $order->private_all ) {
 			return range( 1, count( $this->room_posts ) );
 		}
 
-		// Check for explicit room assignments
+		// Check for explicit room assignments.
 		if ( ! empty( $explicit_assignments[ $order_id ] ) && is_array( $explicit_assignments[ $order_id ] ) ) {
 			$assigned_rooms = array_map( 'intval', $explicit_assignments[ $order_id ] );
 			return array_values(
@@ -373,7 +406,7 @@ class Calendar {
 			);
 		}
 
-		// Default room assignment based on quantity
+		// Default room assignment based on quantity.
 		$rooms_needed = max( 1, intval( $order->rooms_qty ) );
 		return range( 1, min( $rooms_needed, count( $this->room_posts ) ) );
 	}
@@ -381,12 +414,14 @@ class Calendar {
 	/**
 	 * Assign booking order to specific room
 	 *
-	 * @param int       $room_id Room identifier
-	 * @param \DateTime $check_in Check-in date
-	 * @param \DateTime $check_out Check-out date
-	 * @param object    $order Booking order data
+	 * @since 1.0.0
+	 * @param int       $room_id Room identifier.
+	 * @param \DateTime $check_in Check-in date.
+	 * @param \DateTime $check_out Check-out date.
+	 * @param object    $order Booking order data.
+	 * @return void
 	 */
-	private function assignOrderToRoom( $room_id, $check_in, $check_out, $order ) {
+	private function assign_order_to_room( $room_id, $check_in, $check_out, $order ) {
 		if ( ! isset( $this->booking_data[ $room_id ] ) ) {
 			$this->booking_data[ $room_id ] = array();
 		}
@@ -397,21 +432,22 @@ class Calendar {
 			$date_key    = $date->format( 'Y-m-d' );
 			$is_check_in = $date->format( 'Y-m-d' ) === $check_in->format( 'Y-m-d' );
 
-			$this->booking_data[ $room_id ][ $date_key ] = $this->createBookingDataEntry( $order, $is_check_in );
+			$this->booking_data[ $room_id ][ $date_key ] = $this->create_booking_data_entry( $order, $is_check_in );
 		}
 
-		// Mark check-out date
-		$this->markCheckOutDate( $room_id, $check_out, $order );
+		// Mark check-out date.
+		$this->mark_check_out_date( $room_id, $check_out, $order );
 	}
 
 	/**
 	 * Create booking data entry
 	 *
-	 * @param object $order Booking order data
-	 * @param bool   $is_check_in Whether this is check-in date
-	 * @return array Booking data entry
+	 * @since 1.0.0
+	 * @param object $order Booking order data.
+	 * @param bool   $is_check_in Whether this is check-in date.
+	 * @return array Booking data entry.
 	 */
-	private function createBookingDataEntry( $order, $is_check_in ) {
+	private function create_booking_data_entry( $order, $is_check_in ) {
 		return array(
 			'is_locked'      => true,
 			'is_check_in'    => $is_check_in,
@@ -431,11 +467,13 @@ class Calendar {
 	/**
 	 * Mark check-out date in booking data
 	 *
-	 * @param int       $room_id Room identifier
-	 * @param \DateTime $check_out Check-out date
-	 * @param object    $order Booking order data
+	 * @since 1.0.0
+	 * @param int       $room_id Room identifier.
+	 * @param \DateTime $check_out Check-out date.
+	 * @param object    $order Booking order data.
+	 * @return void
 	 */
-	private function markCheckOutDate( $room_id, $check_out, $order ) {
+	private function mark_check_out_date( $room_id, $check_out, $order ) {
 		$checkout_key = $check_out->format( 'Y-m-d' );
 
 		if ( ! isset( $this->booking_data[ $room_id ][ $checkout_key ] ) ) {
@@ -456,26 +494,27 @@ class Calendar {
 	/**
 	 * Get comprehensive room date details including admin status
 	 *
-	 * @param int       $room_id Room identifier
-	 * @param \DateTime $date Target date
-	 * @return array Complete date details
+	 * @since 1.0.0
+	 * @param int       $room_id Room identifier.
+	 * @param \DateTime $date Target date.
+	 * @return array Complete date details.
 	 */
-	private function getRoomDateDetails( $room_id, $date ) {
-		$date_details   = $this->getDefaultDateDetails();
+	private function get_room_date_details( $room_id, $date ) {
+		$date_details   = $this->get_default_date_details();
 		$date_formatted = $date->format( 'Y-m-d' );
 
-		// Apply admin-set status if exists
-		$admin_status = $this->getAdminStatusForDate( $room_id, $date_formatted );
+		// Apply admin-set status if exists.
+		$admin_status = $this->get_admin_status_for_date( $room_id, $date_formatted );
 		if ( $admin_status ) {
 			$date_details = array_merge( $date_details, $admin_status );
 		}
 
-		// Apply booking data if exists
+		// Apply booking data if exists.
 		if ( isset( $this->booking_data[ $room_id ] ) && isset( $this->booking_data[ $room_id ][ $date_formatted ] ) ) {
 			$date_details = array_merge( $date_details, $this->booking_data[ $room_id ][ $date_formatted ] );
 		}
 
-		// Check for private events (special pricing or private only)
+		// Check for private events (special pricing or private only).
 		$private_events = get_option( 'aiohm_booking_mvp_private_events', array() );
 		if ( isset( $private_events[ $date_formatted ] ) ) {
 			$event = $private_events[ $date_formatted ];
@@ -493,9 +532,10 @@ class Calendar {
 	/**
 	 * Get default date details structure
 	 *
-	 * @return array Default date details
+	 * @since 1.0.0
+	 * @return array Default date details.
 	 */
-	private function getDefaultDateDetails() {
+	private function get_default_date_details() {
 		return array(
 			'is_locked'    => false,
 			'is_check_out' => false,
@@ -507,11 +547,12 @@ class Calendar {
 	/**
 	 * Get admin status for specific date
 	 *
-	 * @param int    $room_id Room identifier
-	 * @param string $date_formatted Formatted date string
-	 * @return array|false Admin status data or false if none
+	 * @since 1.0.0
+	 * @param int    $room_id Room identifier.
+	 * @param string $date_formatted Formatted date string.
+	 * @return array|false Admin status data or false if none.
 	 */
-	private function getAdminStatusForDate( $room_id, $date_formatted ) {
+	private function get_admin_status_for_date( $room_id, $date_formatted ) {
 		$blocked_dates = get_option( 'aiohm_booking_mvp_blocked_dates', array() );
 
 		if ( empty( $blocked_dates[ $room_id ] ) || empty( $blocked_dates[ $room_id ][ $date_formatted ] ) ) {
@@ -529,7 +570,7 @@ class Calendar {
 			'custom_price' => $block_data['price'] ?? '',
 		);
 
-		// Set specific status flags
+		// Set specific status flags.
 		switch ( $status ) {
 			case 'booked':
 				$admin_status['is_admin_booked'] = true;
@@ -556,7 +597,7 @@ class Calendar {
 	 * @param array $defaults Default attribute values
 	 * @return array Parsed attributes
 	 */
-	private function parseFilterAttributes( $defaults = array() ) {
+	private function parse_filter_attributes( $defaults = array() ) {
 		$attributes = $defaults;
 
 		// Safe: Read-only calendar filtering, properly sanitized
@@ -567,14 +608,14 @@ class Calendar {
 		}
 
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		if ( isset( $_GET['period'] ) && array_key_exists( sanitize_text_field( wp_unslash( $_GET['period'] ) ), $this->getAvailablePeriods() ) ) {
+		if ( isset( $_GET['period'] ) && array_key_exists( sanitize_text_field( wp_unslash( $_GET['period'] ) ), $this->get_available_periods() ) ) {
             // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			$attributes['period_type'] = sanitize_text_field( wp_unslash( $_GET['period'] ) );
-			$attributes                = $this->parseCustomPeriodAttributes( $attributes );
-			$attributes                = $this->parsePeriodPageAttributes( $attributes );
+			$attributes                = $this->parse_custom_period_attributes( $attributes );
+			$attributes                = $this->parse_period_page_attributes( $attributes );
 		}
 
-		$attributes = $this->parsePeriodNavigation( $attributes );
+		$attributes = $this->parse_period_navigation( $attributes );
 
 		return $attributes;
 	}
@@ -586,7 +627,7 @@ class Calendar {
 	 * @param array $attributes Current attributes
 	 * @return array Updated attributes
 	 */
-	private function parseCustomPeriodAttributes( $attributes ) {
+	private function parse_custom_period_attributes( $attributes ) {
 		if ( $attributes['period_type'] !== self::PERIOD_TYPE_CUSTOM ) {
 			return $attributes;
 		}
@@ -623,7 +664,7 @@ class Calendar {
 	 * @param array $attributes Current attributes
 	 * @return array Updated attributes
 	 */
-	private function parsePeriodPageAttributes( $attributes ) {
+	private function parse_period_page_attributes( $attributes ) {
 		$page_parameter = 'period_page_' . $attributes['period_type'];
 		// Safe: Read-only calendar pagination, properly sanitized
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended
@@ -642,17 +683,17 @@ class Calendar {
 	 * @param array $attributes Current attributes
 	 * @return array Updated attributes
 	 */
-	private function parsePeriodNavigation( $attributes ) {
+	private function parse_period_navigation( $attributes ) {
 		// Safe: Read-only calendar navigation, no data processing
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		if ( isset( $_GET['action_period_next'] ) ) { // No unslash needed - just checking existence
-			$attributes = $this->handleNextPeriodNavigation( $attributes );
+			$attributes = $this->handle_next_period_navigation( $attributes );
 		}
 
 		// Safe: Read-only calendar navigation, no data processing
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		if ( isset( $_GET['action_period_prev'] ) ) { // No unslash needed - just checking existence
-			$attributes = $this->handlePreviousPeriodNavigation( $attributes );
+			$attributes = $this->handle_previous_period_navigation( $attributes );
 		}
 
 		return $attributes;
@@ -664,9 +705,9 @@ class Calendar {
 	 * @param array $attributes Current attributes
 	 * @return array Updated attributes
 	 */
-	private function handleNextPeriodNavigation( $attributes ) {
+	private function handle_next_period_navigation( $attributes ) {
 		if ( $attributes['period_type'] === self::PERIOD_TYPE_CUSTOM ) {
-			return $this->shiftCustomPeriodForward( $attributes );
+			return $this->shift_custom_period_forward( $attributes );
 		} else {
 			++$attributes['period_page'];
 			return $attributes;
@@ -679,9 +720,9 @@ class Calendar {
 	 * @param array $attributes Current attributes
 	 * @return array Updated attributes
 	 */
-	private function handlePreviousPeriodNavigation( $attributes ) {
+	private function handle_previous_period_navigation( $attributes ) {
 		if ( $attributes['period_type'] === self::PERIOD_TYPE_CUSTOM ) {
-			return $this->shiftCustomPeriodBackward( $attributes );
+			return $this->shift_custom_period_backward( $attributes );
 		} else {
 			--$attributes['period_page'];
 			return $attributes;
@@ -694,7 +735,7 @@ class Calendar {
 	 * @param array $attributes Current attributes
 	 * @return array Updated attributes
 	 */
-	private function shiftCustomPeriodForward( $attributes ) {
+	private function shift_custom_period_forward( $attributes ) {
 		$days_difference = $attributes['custom_period_from']->diff( $attributes['custom_period_to'] )->days;
 
 		$attributes['custom_period_from'] = clone $attributes['custom_period_from'];
@@ -712,7 +753,7 @@ class Calendar {
 	 * @param array $attributes Current attributes
 	 * @return array Updated attributes
 	 */
-	private function shiftCustomPeriodBackward( $attributes ) {
+	private function shift_custom_period_backward( $attributes ) {
 		$days_difference = $attributes['custom_period_from']->diff( $attributes['custom_period_to'] )->days;
 
 		$attributes['custom_period_from'] = clone $attributes['custom_period_from'];
@@ -729,7 +770,7 @@ class Calendar {
 	 *
 	 * @return array Available periods with labels
 	 */
-	public static function getAvailablePeriods() {
+	public static function get_available_periods() {
 		return array(
 			self::PERIOD_TYPE_CUSTOM => __( 'Week', 'aiohm-booking-mvp' ),
 			self::PERIOD_TYPE_MONTH  => __( 'Month', 'aiohm-booking-mvp' ),
@@ -769,23 +810,23 @@ class Calendar {
 		$product_names = Config::get_product_names();
 		?>
 		<div class="aiohm-bookings-calendar-wrapper">
-			<?php $this->renderCalendarFilters(); ?>
+			<?php $this->render_calendar_filters(); ?>
 			<div class="aiohm-booking-calendar-tables-wrapper <?php echo esc_attr( "aiohm-booking-calendar-{$period_type}-tables" ); ?> <?php echo esc_attr( "aiohm-booking-calendar-size-{$calendar_size}" ); ?>">
-				<?php $this->renderRoomsTable(); ?>
+				<?php $this->render_rooms_table(); ?>
 				<div class="aiohm-bookings-calendar-holder">
-					<?php $this->renderCalendarTable(); ?>
+					<?php $this->render_calendar_table(); ?>
 				</div>
 			</div>
 
-			<?php $this->renderBookingDetailsPopup(); ?>
-			<?php $this->renderFooterFilters(); ?>
-			<?php $this->renderSyncModules(); ?>
+			<?php $this->render_booking_details_popup(); ?>
+			<?php $this->render_footer_filters(); ?>
+			<?php $this->render_sync_modules(); ?>
 			<?php
 			$settings   = Settings::get_all();
 			$ai_enabled = ! empty( $settings['enable_shareai'] ) || ! empty( $settings['enable_openai'] ) || ! empty( $settings['enable_gemini'] );
 
 			if ( $ai_enabled ) {
-				$this->renderAITableInsights();
+				$this->render_ai_table_insights();
 			}
 			?>
 		</div>
@@ -795,18 +836,18 @@ class Calendar {
 	/**
 	 * Render calendar filter controls
 	 */
-	private function renderCalendarFilters() {
+	private function render_calendar_filters() {
 		$product_names = Config::get_product_names();
 		?>
 		<div class="aiohm-bookings-calendar-filters-wrapper">
 			<form id="aiohm-bookings-calendar-filters" method="get" class="wp-filter">
-				<?php $this->renderHiddenFormParameters(); ?>
+				<?php $this->render_hidden_form_parameters(); ?>
 				<div class="aiohm-bookings-calendar-controls">
 					<div class="aiohm-filter-group">
-						<?php $this->renderPeriodFilterControls(); ?>
+						<?php $this->render_period_filter_controls(); ?>
 						<?php submit_button( __( 'Show', 'aiohm-booking-mvp' ), 'button aiohm-show-button', 'action_filter', false ); ?>
 					</div>
-					<?php $this->renderCalendarLegend(); ?>
+					<?php $this->render_calendar_legend(); ?>
 				</div>
 			</form>
 		</div>
@@ -816,7 +857,7 @@ class Calendar {
 	/**
 	 * Render hidden form parameters
 	 */
-	private function renderHiddenFormParameters() {
+	private function render_hidden_form_parameters() {
 		$parameters = array();
 		// Safe: Read-only form parameter preservation for calendar navigation
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended
@@ -833,8 +874,8 @@ class Calendar {
 	/**
 	 * Render period filter controls
 	 */
-	private function renderPeriodFilterControls() {
-		$available_periods = $this->getAvailablePeriods();
+	private function render_period_filter_controls() {
+		$available_periods = $this->get_available_periods();
 
 		// Render hidden period page inputs
 		foreach ( $available_periods as $period => $period_label ) {
@@ -881,13 +922,13 @@ class Calendar {
 			array( 'title' => __( 'Next &gt;', 'aiohm-booking-mvp' ) )
 		);
 
-		$this->renderCustomPeriodInputs();
+		$this->render_custom_period_inputs();
 	}
 
 	/**
 	 * Render custom period input fields
 	 */
-	private function renderCustomPeriodInputs() {
+	private function render_custom_period_inputs() {
 		// Keep week navigation via arrows; hide date range inline controls
 		$custom_period_class = ' aiohm-hide';
 
@@ -908,7 +949,7 @@ class Calendar {
 	/**
 	 * Render calendar legend
 	 */
-	private function renderCalendarLegend() {
+	private function render_calendar_legend() {
 		?>
 		<div class="aiohm-calendar-legend" aria-label="Calendar legend">
 			<span class="legend-item"><span class="legend-dot legend-free" aria-hidden="true"></span><span class="legend-text">Free</span></span>
@@ -925,7 +966,7 @@ class Calendar {
 	/**
 	 * Render rooms table
 	 */
-	private function renderRoomsTable() {
+	private function render_rooms_table() {
 		?>
 		<table class="aiohm-bookings-calendar-rooms widefat">
 			<thead>
@@ -955,11 +996,11 @@ class Calendar {
 	/**
 	 * Render main calendar table
 	 */
-	private function renderCalendarTable() {
+	private function render_calendar_table() {
 		?>
 		<table class="aiohm-bookings-date-table widefat">
 			<thead>
-				<?php $this->renderCalendarTableHeader(); ?>
+				<?php $this->render_calendar_table_header(); ?>
 			</thead>
 			<tbody>
 				<?php if ( ! empty( $this->room_posts ) ) : ?>
@@ -967,7 +1008,7 @@ class Calendar {
 						<tr room-id="<?php echo esc_attr( $room_post->ID ); ?>">
 							<?php
 							foreach ( $this->period_array as $date ) {
-								$this->renderCalendarCell( $room_post->ID, $date );
+								$this->render_calendar_cell( $room_post->ID, $date );
 							}
 							?>
 						</tr>
@@ -987,7 +1028,7 @@ class Calendar {
 	/**
 	 * Render calendar table header
 	 */
-	private function renderCalendarTableHeader() {
+	private function render_calendar_table_header() {
 		?>
 		<tr>
 			<?php foreach ( $this->period_array as $date ) : ?>
@@ -1013,11 +1054,11 @@ class Calendar {
 	 * @param int       $room_id Room identifier
 	 * @param \DateTime $date Cell date
 	 */
-	private function renderCalendarCell( $room_id, $date ) {
-		$cell_classes = $this->calculateCellClasses( $room_id, $date );
-		$cell_content = $this->generateCellContent( $room_id, $date );
-		$cell_titles  = $this->generateCellTitles( $room_id, $date );
-		$date_details = $this->getRoomDateDetails( $room_id, $date );
+	private function render_calendar_cell( $room_id, $date ) {
+		$cell_classes = $this->calculate_cell_classes( $room_id, $date );
+		$cell_content = $this->generate_cell_content( $room_id, $date );
+		$cell_titles  = $this->generate_cell_titles( $room_id, $date );
+		$date_details = $this->get_room_date_details( $room_id, $date );
 		$custom_price = $date_details['custom_price'] ?? '';
 
 		$edit_attributes = '';
@@ -1055,14 +1096,14 @@ class Calendar {
 	 * @param \DateTime $date Cell date
 	 * @return array Cell classes for first and second parts
 	 */
-	private function calculateCellClasses( $room_id, $date ) {
+	private function calculate_cell_classes( $room_id, $date ) {
 		$classes = array(
 			'first'  => '',
 			'second' => '',
 		);
 
-		$date_details     = $this->getRoomDateDetails( $room_id, $date );
-		$previous_details = $this->getPreviousDayDetails( $room_id, $date );
+		$date_details     = $this->get_room_date_details( $room_id, $date );
+		$previous_details = $this->get_previous_day_details( $room_id, $date );
 
 		$is_today = $date->format( 'Y-m-d' ) === current_time( 'Y-m-d' );
 		if ( $is_today ) {
@@ -1070,11 +1111,11 @@ class Calendar {
 			$classes['second'] .= ' aiohm-date-today';
 		}
 
-		// Apply carry-over coloring from previous day
-		$this->applyCarryOverClasses( $classes, $previous_details );
+		// Apply carry-over coloring from previous day.
+		$this->apply_carry_over_classes( $classes, $previous_details );
 
-		// Apply current day classes
-		$this->applyCurrentDayClasses( $classes, $date_details );
+		// Apply current day classes.
+		$this->apply_current_day_classes( $classes, $date_details );
 
 		return $classes;
 	}
@@ -1086,10 +1127,10 @@ class Calendar {
 	 * @param \DateTime $date Current date
 	 * @return array Previous day details
 	 */
-	private function getPreviousDayDetails( $room_id, $date ) {
+	private function get_previous_day_details( $room_id, $date ) {
 		$previous_date = clone $date;
 		$previous_date->modify( '-1 day' );
-		return $this->getRoomDateDetails( $room_id, $previous_date );
+		return $this->get_room_date_details( $room_id, $previous_date );
 	}
 
 	/**
@@ -1098,12 +1139,12 @@ class Calendar {
 	 * @param array &$classes Cell classes array (by reference)
 	 * @param array $previous_details Previous day details
 	 */
-	private function applyCarryOverClasses( &$classes, $previous_details ) {
+	private function apply_carry_over_classes( &$classes, $previous_details ) {
 		if ( empty( $previous_details ) ) {
 			return;
 		}
 
-		// Carry-over from booking in progress
+		// Carry-over from booking in progress.
 		if ( ! empty( $previous_details['is_locked'] )
 			&& empty( $previous_details['is_check_in'] )
 			&& empty( $previous_details['is_check_out'] ) ) {
@@ -1118,7 +1159,7 @@ class Calendar {
 			}
 		}
 
-		// Carry-over from admin status
+		// Carry-over from admin status.
 		if ( ! empty( $previous_details['is_blocked'] ) ) {
 			$admin_status      = $previous_details['admin_status'] ?? 'blocked';
 			$classes['first'] .= ' aiohm-date-room-locked aiohm-date-' . esc_attr( $admin_status );
@@ -1135,8 +1176,8 @@ class Calendar {
 	 * @param array &$classes Cell classes array (by reference)
 	 * @param array $date_details Current date details
 	 */
-	private function applyCurrentDayClasses( &$classes, $date_details ) {
-		// Admin status classes
+	private function apply_current_day_classes( &$classes, $date_details ) {
+		// Admin status classes.
 		if ( ! empty( $date_details['is_blocked'] ) ) {
 			$admin_status       = $date_details['admin_status'] ?? 'blocked';
 			$classes['second'] .= " aiohm-date-room-locked aiohm-date-{$admin_status}";
@@ -1146,33 +1187,33 @@ class Calendar {
 			}
 		}
 
-		// Private booking classes
+		// Private booking classes.
 		if ( ! empty( $date_details['is_private'] ) ) {
 			$classes['second'] .= ' aiohm-date-private';
 		}
 
-		// Booking status classes
+		// Booking status classes.
 		if ( ! empty( $date_details['is_locked'] ) ) {
-			$this->applyBookingStatusClasses( $classes, $date_details );
+			$this->apply_booking_status_classes( $classes, $date_details );
 		} elseif ( empty( $date_details['is_blocked'] ) ) {
-			$this->applyFreeStatusClasses( $classes, $date_details );
+			$this->apply_free_status_classes( $classes, $date_details );
 		}
 
-		// Private booking additional classes
+		// Private booking additional classes.
 		if ( ! empty( $date_details['is_private'] ) ) {
 			$classes['second'] .= ' aiohm-date-room-locked aiohm-date-private';
 		}
 
-		// Private event classes (special pricing or private only)
+		// Private event classes (special pricing or private only).
 		if ( ! empty( $date_details['has_private_event'] ) ) {
 			$mode = $date_details['private_event_mode'] ?? 'private_only';
 
 			if ( $mode === 'special_pricing' ) {
-				// Special pricing - orange styling, not locked
+				// Special pricing - orange styling, not locked.
 				$classes['first']  .= ' aiohm-date-special-pricing';
 				$classes['second'] .= ' aiohm-date-special-pricing';
 			} else {
-				// Private only - blue styling, locked for individual bookings
+				// Private only - blue styling, locked for individual bookings.
 				$classes['first']  .= ' aiohm-date-private-only';
 				$classes['second'] .= ' aiohm-date-private-only aiohm-date-room-locked';
 			}
@@ -1242,7 +1283,7 @@ class Calendar {
 			'first'  => '',
 			'second' => '',
 		);
-		$date_details = $this->getRoomDateDetails( $room_id, $date );
+		$date_details = $this->get_room_date_details( $room_id, $date );
 
 		// Add booking links for middle booking days
 		if ( ! empty( $date_details['is_locked'] )
@@ -1268,8 +1309,8 @@ class Calendar {
 	 * @param \DateTime $date Cell date
 	 * @return array Cell titles for first and second parts
 	 */
-	private function generateCellTitles( $room_id, $date ) {
-		$date_details = $this->getRoomDateDetails( $room_id, $date );
+	private function generate_cell_titles( $room_id, $date ) {
+		$date_details = $this->get_room_date_details( $room_id, $date );
 		$titles       = array();
 
 		if ( $date_details['is_check_out'] ) {
@@ -1293,7 +1334,7 @@ class Calendar {
 		$availability_string = implode( ', ', $titles );
 		$base_title          = $date_string . ' ' . $availability_string;
 
-		$additional_info = $this->generateAdditionalTitleInfo( $date_details );
+		$additional_info = $this->generate_additional_title_info( $date_details );
 		$complete_title  = $base_title;
 
 		if ( ! empty( $additional_info ) ) {
@@ -1312,7 +1353,7 @@ class Calendar {
 	 * @param array $date_details Date details
 	 * @return array Additional information lines
 	 */
-	private function generateAdditionalTitleInfo( $date_details ) {
+	private function generate_additional_title_info( $date_details ) {
 		$info = array();
 
 		if ( isset( $date_details['buyer_name'] ) ) {
@@ -1351,7 +1392,7 @@ class Calendar {
 	/**
 	 * Render booking details popup
 	 */
-	private function renderBookingDetailsPopup() {
+	private function render_booking_details_popup() {
 		?>
 		<div id="aiohm-bookings-calendar-popup" class="aiohm-popup aiohm-hide">
 			<div class="aiohm-popup-backdrop"></div>
@@ -1372,7 +1413,7 @@ class Calendar {
 	/**
 	 * Render footer filter controls
 	 */
-	private function renderFooterFilters() {
+	private function render_footer_filters() {
 		?>
 		<div class="aiohm-bookings-calendar-footer-wrapper">
 			<div class="aiohm-bookings-calendar-controls">
@@ -1462,7 +1503,7 @@ class Calendar {
 						
 						<div class="aiohm-private-events-status" style="background: white; border-radius: 4px; border: 1px solid #ddd; min-height: 200px;">
 							<div id="aiohm-private-events-list" style="padding: 15px;">
-								<?php $this->renderCurrentPrivateEvents(); ?>
+								<?php $this->render_current_private_events(); ?>
 							</div>
 						</div>
 					</div>
@@ -1475,7 +1516,7 @@ class Calendar {
 	/**
 	 * Render current private events list
 	 */
-	private function renderCurrentPrivateEvents() {
+	private function render_current_private_events() {
 		$private_events = get_option( 'aiohm_booking_mvp_private_events', array() );
 
 		if ( empty( $private_events ) ) {
@@ -1527,9 +1568,9 @@ class Calendar {
 	/**
 	 * Render external calendar sync modules
 	 */
-	private function renderSyncModules() {
+	private function render_sync_modules() {
 		$settings           = get_option( 'aiohm_booking_mvp_settings', array() );
-		$sync_configuration = $this->getSyncConfiguration( $settings );
+		$sync_configuration = $this->get_sync_configuration( $settings );
 
 		// Check if sync modules are enabled
 		$booking_com_enabled = ! empty( $settings['enable_booking_com'] );
@@ -1544,11 +1585,11 @@ class Calendar {
 			<div class="aiohm-module-grid">
 				<?php
 				if ( $booking_com_enabled ) {
-					$this->renderBookingSyncModule( $sync_configuration['booking'] );}
+					$this->render_booking_sync_module( $sync_configuration['booking'] );}
 				?>
 				<?php
 				if ( $airbnb_enabled ) {
-					$this->renderAirbnbSyncModule( $sync_configuration['airbnb'] );}
+					$this->render_airbnb_sync_module( $sync_configuration['airbnb'] );}
 				?>
 			</div>
 		</div>
@@ -1558,7 +1599,7 @@ class Calendar {
 	/**
 	 * Render AI Table Insights section
 	 */
-	private function renderAITableInsights() {
+	private function render_ai_table_insights() {
 		// Get default AI provider and map to display name
 		$settings         = Settings::get_all();
 		$default_provider = $settings['default_ai_provider'] ?? 'shareai';
@@ -1631,8 +1672,8 @@ class Calendar {
 	 * @param array $settings Plugin settings
 	 * @return array Sync configuration
 	 */
-	private function getSyncConfiguration( $settings ) {
-		$cron_frequencies = $this->getAvailableCronFrequencies();
+	private function get_sync_configuration( $settings ) {
+		$cron_frequencies = $this->get_available_cron_frequencies();
 
 		return array(
 			'booking'     => array(
@@ -1652,7 +1693,7 @@ class Calendar {
 	 *
 	 * @return array Available cron frequency options
 	 */
-	private function getAvailableCronFrequencies() {
+	private function get_available_cron_frequencies() {
 		return array(
 			'every_5min'   => __( 'Every 5 minutes', 'aiohm-booking-mvp' ),
 			'every_15min'  => __( 'Every 15 minutes', 'aiohm-booking-mvp' ),
@@ -1671,8 +1712,8 @@ class Calendar {
 	 *
 	 * @param array $config Booking sync configuration
 	 */
-	private function renderBookingSyncModule( $config ) {
-		$cron_frequencies = $this->getAvailableCronFrequencies();
+	private function render_booking_sync_module( $config ) {
+		$cron_frequencies = $this->get_available_cron_frequencies();
 		?>
 		<div class="aiohm-module-card is-active">
 			<div class="aiohm-module-header">
@@ -1726,8 +1767,8 @@ class Calendar {
 	 *
 	 * @param array $config Airbnb sync configuration
 	 */
-	private function renderAirbnbSyncModule( $config ) {
-		$cron_frequencies = $this->getAvailableCronFrequencies();
+	private function render_airbnb_sync_module( $config ) {
+		$cron_frequencies = $this->get_available_cron_frequencies();
 		?>
 		<div class="aiohm-module-card is-active">
 			<div class="aiohm-module-header">
@@ -1781,7 +1822,7 @@ class Calendar {
 	 *
 	 * @return bool Whether calendar can be rendered
 	 */
-	public static function hasSufficientFilterData() {
-		return true; // Always show calendar with default 7-day view
+	public static function has_sufficient_filter_data() {
+		return true; // Always show calendar with default 7-day view.
 	}
 }
