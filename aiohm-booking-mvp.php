@@ -35,8 +35,6 @@ require_once AIOHM_BOOKING_MVP_DIR . 'vendor/autoload.php';
 // Load helper functions (non-class functions)
 require_once AIOHM_BOOKING_MVP_DIR.'includes/aiohm-booking-mvp-helpers.php';
 
-// Load old admin class for complete functionality (coexists with namespaced version)
-require_once AIOHM_BOOKING_MVP_DIR.'includes/aiohm-booking-mvp-admin.php';
 
 // Use namespaced classes
 use AIOHM\BookingMVP\Core\Activator;
@@ -112,10 +110,6 @@ class AIOHM_Booking_MVP {
         Admin::init();
         Security::init();
         
-        // Initialize old admin class for AJAX handlers and form processing (coexists with namespaced Admin)
-        if (class_exists('AIOHM_BOOKING_MVP_Admin')) {
-            \AIOHM_BOOKING_MVP_Admin::init();
-        }
     }
 }
 
