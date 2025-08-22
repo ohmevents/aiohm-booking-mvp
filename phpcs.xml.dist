@@ -1,0 +1,112 @@
+<?xml version="1.0"?>
+<ruleset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    name="AIOHM Booking MVP WordPress Coding Standards"
+    xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/PHPCSStandards/PHP_CodeSniffer/master/phpcs.xsd">
+
+    <description>AIOHM Booking MVP plugin coding standard based on WordPress Coding Standards.</description>
+
+    <!-- Set the minimum supported PHP version. -->
+    <config name="minimum_supported_php_version" value="7.4"/>
+
+    <!-- Include the WordPress-Extra standard. -->
+    <rule ref="WordPress-Extra">
+        <!-- Allow short array syntax. -->
+        <exclude name="Generic.Arrays.DisallowShortArraySyntax"/>
+        <!-- Exclude Yoda conditions as they can reduce readability in some cases. -->
+        <exclude name="WordPress.PHP.YodaConditions.NotYoda"/>
+    </rule>
+
+    <!-- Include the WordPress-Docs standard for inline documentation. -->
+    <rule ref="WordPress-Docs"/>
+
+    <!-- Include the WordPress-Core standard. -->
+    <rule ref="WordPress-Core"/>
+
+    <!-- Set the text domain. -->
+    <rule ref="WordPress.WP.I18n">
+        <properties>
+            <property name="text_domain" type="array">
+                <element value="aiohm-booking-mvp"/>
+            </property>
+        </properties>
+    </rule>
+
+    <!-- Verify that the text_domain is set to the desired text-domain.
+         Multiple valid text domains can be provided as a comma-delimited list. -->
+    <rule ref="WordPress.WP.I18n.MissingTextDomain">
+        <properties>
+            <property name="text_domain" type="array">
+                <element value="aiohm-booking-mvp"/>
+            </property>
+        </properties>
+    </rule>
+
+    <!-- Allow for theme specific exceptions to the file name rules based
+         on the theme hierarchy. -->
+    <rule ref="WordPress.Files.FileName">
+        <properties>
+            <property name="strict_class_file_names" value="false"/>
+        </properties>
+    </rule>
+
+    <!-- Set the minimum supported WP version. -->
+    <config name="minimum_wp_version" value="6.2"/>
+
+    <!-- Directories and files to check. -->
+    <file>./src</file>
+    <file>./aiohm-booking-mvp.php</file>
+    <file>./uninstall.php</file>
+    
+    <!-- Directories and files to exclude from checks. -->
+    <exclude-pattern>*/vendor/*</exclude-pattern>
+    <exclude-pattern>*/node_modules/*</exclude-pattern>
+    <exclude-pattern>*/assets/*</exclude-pattern>
+    <exclude-pattern>*/templates/*</exclude-pattern>
+    <exclude-pattern>*/languages/*</exclude-pattern>
+    <exclude-pattern>*/.git/*</exclude-pattern>
+    
+    <!-- Exclude test files from certain rules. -->
+    <rule ref="WordPress.Files.FileName.InvalidClassFileName">
+        <exclude-pattern>*/tests/*</exclude-pattern>
+    </rule>
+
+    <!-- Allow short prefixes for hooks as the plugin uses a clear namespace. -->
+    <rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+        <properties>
+            <property name="prefixes" type="array">
+                <element value="aiohm_booking_mvp"/>
+                <element value="AIOHM_BOOKING_MVP"/>
+                <element value="aiohm"/>
+                <element value="AIOHM"/>
+            </property>
+        </properties>
+    </rule>
+
+    <!-- Configure PSR-4 autoloading compliance. -->
+    <rule ref="PSR1.Classes.ClassDeclaration"/>
+    <rule ref="PSR1.Files.SideEffects"/>
+
+    <!-- Show sniff codes in all reports. -->
+    <arg value="ps"/>
+    
+    <!-- Use colors in output. -->
+    <arg name="colors"/>
+    
+    <!-- Show progress. -->
+    <arg value="p"/>
+
+    <!-- Strip the file paths down to the relevant bit. -->
+    <arg name="basepath" value="./"/>
+
+    <!-- Check up to 8 files simultaneously. -->
+    <arg name="parallel" value="8"/>
+
+    <!-- Cache the results between runs. -->
+    <arg name="cache" value=".phpcs.cache"/>
+
+    <!-- Set report format. -->
+    <arg name="report" value="summary,source,full"/>
+
+    <!-- Only check PHP files. -->
+    <arg name="extensions" value="php"/>
+</ruleset>

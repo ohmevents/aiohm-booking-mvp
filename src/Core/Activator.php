@@ -2,20 +2,21 @@
 
 namespace AIOHM\BookingMVP\Core;
 
-if ( ! defined('ABSPATH') ) { exit; }
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; }
 
 class Activator {
-    
-    public static function activate(){
-        // phpcs:disable WordPress.DB.DirectDatabaseQuery.SchemaChange
-        // Reason: Database schema creation during plugin activation is necessary and safe
-        global $wpdb;
-        require_once ABSPATH.'wp-admin/includes/upgrade.php';
-        $charset = $wpdb->get_charset_collate();
-        $order = $wpdb->prefix.'aiohm_booking_mvp_order';
-        $item  = $wpdb->prefix.'aiohm_booking_mvp_item';
 
-        $sql1 = "CREATE TABLE {$order} (
+	public static function activate() {
+        // phpcs:disable WordPress.DB.DirectDatabaseQuery.SchemaChange
+		// Reason: Database schema creation during plugin activation is necessary and safe
+		global $wpdb;
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+		$charset = $wpdb->get_charset_collate();
+		$order   = $wpdb->prefix . 'aiohm_booking_mvp_order';
+		$item    = $wpdb->prefix . 'aiohm_booking_mvp_item';
+
+		$sql1 = "CREATE TABLE {$order} (
             id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
             mode VARCHAR(10) NOT NULL DEFAULT 'rooms',
             guests_qty INT(11) NOT NULL DEFAULT 1,
@@ -51,7 +52,7 @@ class Activator {
             KEY external_idx (external_booking_source, external_booking_id)
         ) {$charset};";
 
-        $sql2 = "CREATE TABLE {$item} (
+		$sql2 = "CREATE TABLE {$item} (
             id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
             order_id BIGINT(20) UNSIGNED NOT NULL,
             type VARCHAR(10) NOT NULL,
@@ -61,157 +62,162 @@ class Activator {
             KEY order_idx (order_id)
         ) {$charset};";
 
-        dbDelta($sql1);
-        dbDelta($sql2);
+		dbDelta( $sql1 );
+		dbDelta( $sql2 );
         // phpcs:enable WordPress.DB.DirectDatabaseQuery.SchemaChange
 
-        self::maybe_update_database_schema();
-        self::register_cpt();
-        self::create_default_settings();
-        flush_rewrite_rules();
-    }
+		self::maybe_update_database_schema();
+		self::register_cpt();
+		self::create_default_settings();
+		flush_rewrite_rules();
+	}
 
-    public static function deactivate(){
-        wp_clear_scheduled_hook('aiohm_booking_mvp_cleanup_holds');
-        flush_rewrite_rules();
-    }
+	public static function deactivate() {
+		wp_clear_scheduled_hook( 'aiohm_booking_mvp_cleanup_holds' );
+		flush_rewrite_rules();
+	}
 
-    public static function register_cpt(){
-        register_post_type('aiohm_booking_event',[
-            'labels'=>[
-                'name'=>__('Events','aiohm-booking-mvp'),
-                'singular_name'=>__('Event','aiohm-booking-mvp')
-            ],
-            'public'=>false, 'show_ui'=>true, 'menu_icon'=>'dashicons-calendar-alt',
-            'supports'=>['title','editor','thumbnail','custom-fields']
-        ]);
-    }
-    
-    private static function create_default_settings() {
-        $existing_settings = get_option('aiohm_booking_mvp_settings', []);
-        
-        if (empty($existing_settings)) {
-            $default_settings = [
-                'enable_rooms' => '1',
-                'room_price' => '0.00',
-                'currency' => 'EUR',
-                'deposit_percent' => '30.0',
-                'available_rooms' => '7',
-                'allow_private_all' => '1',
-                'min_age' => '0',
-                'accommodation_product_name' => 'room',
-                'form_primary_color' => '#457d58',
-                'form_text_color' => '#333333',
-                'form_title' => 'Book Your Stay',
-                'form_subtitle' => 'Choose your perfect accommodation',
-                'form_field_address' => '0',
-                'form_field_age' => '1',
-                'form_field_company' => '0',
-                'form_field_country' => '0',
-                'form_field_vat' => '0',
-                'form_field_pets' => '0',
-                'form_field_arrival_time' => '0',
-                'form_field_purpose' => '0',
-                'form_field_special_requests' => '0',
-                'enable_stripe' => '0',
-                'enable_paypal' => '0',
-                'stripe_publishable_key' => '',
-                'stripe_secret_key' => '',
-                'paypal_client_id' => '',
-                'paypal_client_secret' => '',
-                'enable_booking_com' => '0',
-                'enable_airbnb' => '0',
-                'booking_com_property_id' => '',
-                'airbnb_property_id' => '',
-                'booking_com_ical_url' => '',
-                'airbnb_ical_url' => '',
-                'booking_com_cron_frequency' => 'hourly',
-                'airbnb_cron_frequency' => 'hourly',
-                'enable_shareai' => '1',
-                'enable_openai' => '0',
-                'enable_gemini' => '0',
-                'shareai_api_key' => '',
-                'openai_api_key' => '',
-                'gemini_api_key' => '',
-                'default_ai_provider' => 'shareai',
-                'checkout_page_url' => '',
-                'thankyou_page_url' => ''
-            ];
-            
-            update_option('aiohm_booking_mvp_settings', $default_settings);
-            
-            $default_accommodations = [];
-            for ($i = 0; $i < 7; $i++) {
-                $default_accommodations[] = [
-                    'title' => 'Room ' . ($i + 1),
-                    'price' => '',
-                    'earlybird_price' => '',
-                    'type' => 'standard',
-                    'description' => 'Comfortable accommodation with essential amenities'
-                ];
-            }
-            
-            update_option('aiohm_booking_mvp_accommodations_details', $default_accommodations);
-        }
-    }
-    
-    private static function maybe_update_database_schema() {
+	public static function register_cpt() {
+		register_post_type(
+			'aiohm_booking_event',
+			array(
+				'labels'    => array(
+					'name'          => __( 'Events', 'aiohm-booking-mvp' ),
+					'singular_name' => __( 'Event', 'aiohm-booking-mvp' ),
+				),
+				'public'    => false,
+				'show_ui'   => true,
+				'menu_icon' => 'dashicons-calendar-alt',
+				'supports'  => array( 'title', 'editor', 'thumbnail', 'custom-fields' ),
+			)
+		);
+	}
+
+	private static function create_default_settings() {
+		$existing_settings = get_option( 'aiohm_booking_mvp_settings', array() );
+
+		if ( empty( $existing_settings ) ) {
+			$default_settings = array(
+				'enable_rooms'                => '1',
+				'room_price'                  => '0.00',
+				'currency'                    => 'EUR',
+				'deposit_percent'             => '30.0',
+				'available_rooms'             => '7',
+				'allow_private_all'           => '1',
+				'min_age'                     => '0',
+				'accommodation_product_name'  => 'room',
+				'form_primary_color'          => '#457d58',
+				'form_text_color'             => '#333333',
+				'form_title'                  => 'Book Your Stay',
+				'form_subtitle'               => 'Choose your perfect accommodation',
+				'form_field_address'          => '0',
+				'form_field_age'              => '1',
+				'form_field_company'          => '0',
+				'form_field_country'          => '0',
+				'form_field_vat'              => '0',
+				'form_field_pets'             => '0',
+				'form_field_arrival_time'     => '0',
+				'form_field_purpose'          => '0',
+				'form_field_special_requests' => '0',
+				'enable_stripe'               => '0',
+				'enable_paypal'               => '0',
+				'stripe_publishable_key'      => '',
+				'stripe_secret_key'           => '',
+				'paypal_client_id'            => '',
+				'paypal_client_secret'        => '',
+				'enable_booking_com'          => '0',
+				'enable_airbnb'               => '0',
+				'booking_com_property_id'     => '',
+				'airbnb_property_id'          => '',
+				'booking_com_ical_url'        => '',
+				'airbnb_ical_url'             => '',
+				'booking_com_cron_frequency'  => 'hourly',
+				'airbnb_cron_frequency'       => 'hourly',
+				'enable_shareai'              => '1',
+				'enable_openai'               => '0',
+				'enable_gemini'               => '0',
+				'shareai_api_key'             => '',
+				'openai_api_key'              => '',
+				'gemini_api_key'              => '',
+				'default_ai_provider'         => 'shareai',
+				'checkout_page_url'           => '',
+				'thankyou_page_url'           => '',
+			);
+
+			update_option( 'aiohm_booking_mvp_settings', $default_settings );
+
+			$default_accommodations = array();
+			for ( $i = 0; $i < 7; $i++ ) {
+				$default_accommodations[] = array(
+					'title'           => 'Room ' . ( $i + 1 ),
+					'price'           => '',
+					'earlybird_price' => '',
+					'type'            => 'standard',
+					'description'     => 'Comfortable accommodation with essential amenities',
+				);
+			}
+
+			update_option( 'aiohm_booking_mvp_accommodations_details', $default_accommodations );
+		}
+	}
+
+	private static function maybe_update_database_schema() {
         // phpcs:disable WordPress.DB.DirectDatabaseQuery.SchemaChange
         // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery
         // phpcs:disable WordPress.DB.DirectDatabaseQuery.NoCaching
         // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-        // Reason: Database schema updates during activation require direct queries for compatibility checks
-        global $wpdb;
-        $order_table = $wpdb->prefix . 'aiohm_booking_mvp_order';
-        
-        $table_exists = $wpdb->get_var("SHOW TABLES LIKE '{$order_table}'");
-        if (!$table_exists) {
-            return;
-        }
-        
-        $column_exists = $wpdb->get_results("SHOW COLUMNS FROM `{$order_table}` LIKE 'buyer_age'");
-        if (empty($column_exists)) {
-            $wpdb->query("ALTER TABLE `{$order_table}` ADD COLUMN buyer_age INT(11) NOT NULL DEFAULT 0 AFTER buyer_phone");
-        }
+		// Reason: Database schema updates during activation require direct queries for compatibility checks
+		global $wpdb;
+		$order_table = $wpdb->prefix . 'aiohm_booking_mvp_order';
 
-        $column_exists = $wpdb->get_results($wpdb->prepare("SHOW COLUMNS FROM `{$order_table}` LIKE %s", 'guests_qty'));
-        if (empty($column_exists)) {
-            $wpdb->query("ALTER TABLE `{$order_table}` ADD COLUMN guests_qty INT(11) NOT NULL DEFAULT 1 AFTER rooms_qty");
-        }
+		$table_exists = $wpdb->get_var( "SHOW TABLES LIKE '{$order_table}'" );
+		if ( ! $table_exists ) {
+			return;
+		}
 
-        $new_columns = [
-            'vat_number' => 'VARCHAR(50) NULL AFTER buyer_age',
-            'purpose_of_stay' => 'VARCHAR(50) NULL AFTER vat_number',
-            'estimated_arrival_time' => 'VARCHAR(50) NULL AFTER purpose_of_stay',
-            'bringing_pets' => 'TINYINT(1) NOT NULL DEFAULT 0 AFTER estimated_arrival_time',
-            'pet_details' => 'TEXT NULL AFTER bringing_pets',
-        ];
+		$column_exists = $wpdb->get_results( "SHOW COLUMNS FROM `{$order_table}` LIKE 'buyer_age'" );
+		if ( empty( $column_exists ) ) {
+			$wpdb->query( "ALTER TABLE `{$order_table}` ADD COLUMN buyer_age INT(11) NOT NULL DEFAULT 0 AFTER buyer_phone" );
+		}
 
-        foreach ($new_columns as $column_name => $column_definition) {
-            $column_exists = $wpdb->get_results("SHOW COLUMNS FROM `{$order_table}` LIKE '{$column_name}'");
-            if (empty($column_exists)) {
-                $wpdb->query("ALTER TABLE `{$order_table}` ADD COLUMN {$column_name} {$column_definition}");
-            }
-        }
-        
-        $external_source_exists = $wpdb->get_results("SHOW COLUMNS FROM `{$order_table}` LIKE 'external_booking_source'");
-        if (empty($external_source_exists)) {
-            $wpdb->query("ALTER TABLE `{$order_table}` ADD COLUMN external_booking_source VARCHAR(50) NULL AFTER payment_id");
-            $wpdb->query("ALTER TABLE `{$order_table}` ADD COLUMN external_booking_id VARCHAR(191) NULL AFTER external_booking_source");
-        }
-        
-        $event_id_exists = $wpdb->get_results("SHOW COLUMNS FROM `{$order_table}` LIKE 'event_id'");
-        if (!empty($event_id_exists)) {
-            $wpdb->query("ALTER TABLE `{$order_table}` DROP COLUMN event_id");
-        }
-        
-        $seats_qty_exists = $wpdb->get_results("SHOW COLUMNS FROM `{$order_table}` LIKE 'seats_qty'");
-        if (!empty($seats_qty_exists)) {
-            $wpdb->query("ALTER TABLE `{$order_table}` DROP COLUMN seats_qty");
-        }
+		$column_exists = $wpdb->get_results( $wpdb->prepare( "SHOW COLUMNS FROM `{$order_table}` LIKE %s", 'guests_qty' ) );
+		if ( empty( $column_exists ) ) {
+			$wpdb->query( "ALTER TABLE `{$order_table}` ADD COLUMN guests_qty INT(11) NOT NULL DEFAULT 1 AFTER rooms_qty" );
+		}
+
+		$new_columns = array(
+			'vat_number'             => 'VARCHAR(50) NULL AFTER buyer_age',
+			'purpose_of_stay'        => 'VARCHAR(50) NULL AFTER vat_number',
+			'estimated_arrival_time' => 'VARCHAR(50) NULL AFTER purpose_of_stay',
+			'bringing_pets'          => 'TINYINT(1) NOT NULL DEFAULT 0 AFTER estimated_arrival_time',
+			'pet_details'            => 'TEXT NULL AFTER bringing_pets',
+		);
+
+		foreach ( $new_columns as $column_name => $column_definition ) {
+			$column_exists = $wpdb->get_results( "SHOW COLUMNS FROM `{$order_table}` LIKE '{$column_name}'" );
+			if ( empty( $column_exists ) ) {
+				$wpdb->query( "ALTER TABLE `{$order_table}` ADD COLUMN {$column_name} {$column_definition}" );
+			}
+		}
+
+		$external_source_exists = $wpdb->get_results( "SHOW COLUMNS FROM `{$order_table}` LIKE 'external_booking_source'" );
+		if ( empty( $external_source_exists ) ) {
+			$wpdb->query( "ALTER TABLE `{$order_table}` ADD COLUMN external_booking_source VARCHAR(50) NULL AFTER payment_id" );
+			$wpdb->query( "ALTER TABLE `{$order_table}` ADD COLUMN external_booking_id VARCHAR(191) NULL AFTER external_booking_source" );
+		}
+
+		$event_id_exists = $wpdb->get_results( "SHOW COLUMNS FROM `{$order_table}` LIKE 'event_id'" );
+		if ( ! empty( $event_id_exists ) ) {
+			$wpdb->query( "ALTER TABLE `{$order_table}` DROP COLUMN event_id" );
+		}
+
+		$seats_qty_exists = $wpdb->get_results( "SHOW COLUMNS FROM `{$order_table}` LIKE 'seats_qty'" );
+		if ( ! empty( $seats_qty_exists ) ) {
+			$wpdb->query( "ALTER TABLE `{$order_table}` DROP COLUMN seats_qty" );
+		}
         // phpcs:enable WordPress.DB.DirectDatabaseQuery.SchemaChange
         // phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery
         // phpcs:enable WordPress.DB.DirectDatabaseQuery.NoCaching
         // phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-    }
+	}
 }

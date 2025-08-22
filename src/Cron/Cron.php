@@ -2,7 +2,8 @@
 
 namespace AIOHM\BookingMVP\Cron;
 
-if (!defined('ABSPATH')) { exit; }
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; }
 
 /**
  * AIOHM Booking MVP Cron Handler
@@ -15,178 +16,181 @@ if (!defined('ABSPATH')) { exit; }
  */
 class Cron {
 
-    /**
-     * Initialize cron functionality
-     *
-     * @since 1.0.0
-     * @return void
-     */
-    public static function init() {
-        add_action('aiohm_booking_mvp_fifteen_minutes_cron', [__CLASS__, 'run_ical_sync']);
+	/**
+	 * Initialize cron functionality
+	 *
+	 * @since 1.0.0
+	 * @return void
+	 */
+	public static function init() {
+		add_action( 'aiohm_booking_mvp_fifteen_minutes_cron', array( __CLASS__, 'run_ical_sync' ) );
 
-        if (!wp_next_scheduled('aiohm_booking_mvp_fifteen_minutes_cron')) {
-            wp_schedule_event(time(), '15_minutes', 'aiohm_booking_mvp_fifteen_minutes_cron');
-        }
+		if ( ! wp_next_scheduled( 'aiohm_booking_mvp_fifteen_minutes_cron' ) ) {
+			wp_schedule_event( time(), '15_minutes', 'aiohm_booking_mvp_fifteen_minutes_cron' );
+		}
 
-        // Add custom cron interval
-        add_filter('cron_schedules', [__CLASS__, 'add_cron_interval']);
-    }
+		// Add custom cron interval
+		add_filter( 'cron_schedules', array( __CLASS__, 'add_cron_interval' ) );
+	}
 
-    /**
-     * Add custom cron intervals
-     *
-     * @since 1.0.0
-     * @param array $schedules Existing cron schedules
-     * @return array Modified schedules array
-     */
-    public static function add_cron_interval($schedules) {
-        $schedules['15_minutes'] = array(
-            'interval' => 15 * 60,
-            'display'  => esc_html__('Every 15 Minutes', 'aiohm-booking-mvp'),
-        );
-        return $schedules;
-    }
+	/**
+	 * Add custom cron intervals
+	 *
+	 * @since 1.0.0
+	 * @param array $schedules Existing cron schedules
+	 * @return array Modified schedules array
+	 */
+	public static function add_cron_interval( $schedules ) {
+		$schedules['15_minutes'] = array(
+			'interval' => 15 * 60,
+			'display'  => esc_html__( 'Every 15 Minutes', 'aiohm-booking-mvp' ),
+		);
+		return $schedules;
+	}
 
-    /**
-     * Run iCal synchronization for external platforms
-     *
-     * @since 1.0.0
-     * @return void
-     */
-    public static function run_ical_sync() {
-        $settings = get_option('aiohm_booking_mvp_settings', []);
-        
-        // Get both platform URLs
-        $booking_com_url = $settings['booking_com_ical_url'] ?? '';
-        $airbnb_url = $settings['airbnb_ical_url'] ?? '';
-        
-        $blocked_dates = get_option('aiohm_booking_mvp_blocked_dates', []);
+	/**
+	 * Run iCal synchronization for external platforms
+	 *
+	 * @since 1.0.0
+	 * @return void
+	 */
+	public static function run_ical_sync() {
+		$settings = get_option( 'aiohm_booking_mvp_settings', array() );
 
-        // Clear existing external bookings to avoid duplicates
-        foreach ($blocked_dates as $room_id => &$dates) {
-            foreach ($dates as $date => $details) {
-                if (isset($details['status']) && $details['status'] === 'external') {
-                    unset($dates[$date]);
-                }
-            }
-        }
+		// Get both platform URLs
+		$booking_com_url = $settings['booking_com_ical_url'] ?? '';
+		$airbnb_url      = $settings['airbnb_ical_url'] ?? '';
 
-        $available_rooms = intval($settings['available_rooms'] ?? 7);
-        
-        // Sync Booking.com
-        if (!empty($booking_com_url) && filter_var($booking_com_url, FILTER_VALIDATE_URL)) {
-            $events = self::fetch_ical_events($booking_com_url);
-            if (!empty($events)) {
-                $blocked_dates = self::process_external_events($events, $blocked_dates, $available_rooms, 'Booking.com');
-            }
-        }
-        
-        // Sync Airbnb  
-        if (!empty($airbnb_url) && filter_var($airbnb_url, FILTER_VALIDATE_URL)) {
-            $events = self::fetch_ical_events($airbnb_url);
-            if (!empty($events)) {
-                $blocked_dates = self::process_external_events($events, $blocked_dates, $available_rooms, 'Airbnb');
-            }
-        }
+		$blocked_dates = get_option( 'aiohm_booking_mvp_blocked_dates', array() );
 
-        update_option('aiohm_booking_mvp_blocked_dates', $blocked_dates);
-        
-        // Log successful sync
-        update_option('aiohm_booking_mvp_last_sync', current_time('mysql'));
-    }
-    
-    /**
-     * Fetch iCal events from external URL
-     *
-     * @since 1.0.0
-     * @param string $url iCal feed URL
-     * @return array Array of parsed events
-     */
-    private static function fetch_ical_events($url) {
-        $response = wp_remote_get($url, [
-            'timeout' => 30,
-            'user-agent' => 'AIOHM Booking iCal Sync/1.0'
-        ]);
+		// Clear existing external bookings to avoid duplicates
+		foreach ( $blocked_dates as $room_id => &$dates ) {
+			foreach ( $dates as $date => $details ) {
+				if ( isset( $details['status'] ) && $details['status'] === 'external' ) {
+					unset( $dates[ $date ] );
+				}
+			}
+		}
 
-        if (is_wp_error($response)) {
-            return [];
-        }
+		$available_rooms = intval( $settings['available_rooms'] ?? 7 );
 
-        $body = wp_remote_retrieve_body($response);
-        return self::parse_ical($body);
-    }
-    
-    /**
-     * Process external events and add to blocked dates
-     *
-     * @since 1.0.0
-     * @param array $events Array of iCal events
-     * @param array $blocked_dates Existing blocked dates array
-     * @param int $available_rooms Number of available rooms
-     * @param string $platform Platform name (e.g., 'Booking.com', 'Airbnb')
-     * @return array Updated blocked dates array
-     */
-    private static function process_external_events($events, $blocked_dates, $available_rooms, $platform) {
-        foreach ($events as $event) {
-            try {
-                $start_date = new \DateTime($event['DTSTART']);
-                $end_date = new \DateTime($event['DTEND']);
-                $summary = $event['SUMMARY'] ?? 'External Booking';
-                $uid = $event['UID'] ?? '';
+		// Sync Booking.com
+		if ( ! empty( $booking_com_url ) && filter_var( $booking_com_url, FILTER_VALIDATE_URL ) ) {
+			$events = self::fetch_ical_events( $booking_com_url );
+			if ( ! empty( $events ) ) {
+				$blocked_dates = self::process_external_events( $events, $blocked_dates, $available_rooms, 'Booking.com' );
+			}
+		}
 
-                $period = new \DatePeriod($start_date, new \DateInterval('P1D'), $end_date);
+		// Sync Airbnb
+		if ( ! empty( $airbnb_url ) && filter_var( $airbnb_url, FILTER_VALIDATE_URL ) ) {
+			$events = self::fetch_ical_events( $airbnb_url );
+			if ( ! empty( $events ) ) {
+				$blocked_dates = self::process_external_events( $events, $blocked_dates, $available_rooms, 'Airbnb' );
+			}
+		}
 
-                foreach ($period as $date) {
-                    for ($i = 1; $i <= $available_rooms; $i++) {
-                        $date_key = $date->format('Y-m-d');
-                        if (!isset($blocked_dates[$i])) {
-                            $blocked_dates[$i] = [];
-                        }
-                        $blocked_dates[$i][$date_key] = [
-                            'status' => 'external',
-                            'reason' => "[$platform] $summary",
-                            'platform' => strtolower($platform),
-                            'external_uid' => $uid,
-                            'blocked_at' => current_time('mysql'),
-                        ];
-                    }
-                }
-            } catch (\Exception $e) {
-                // Skip invalid events
-                continue;
-            }
-        }
-        
-        return $blocked_dates;
-    }
+		update_option( 'aiohm_booking_mvp_blocked_dates', $blocked_dates );
 
-    /**
-     * Parse iCal format string into events array
-     *
-     * @since 1.0.0
-     * @param string $ical_string iCal format string
-     * @return array Array of parsed events
-     */
-    private static function parse_ical($ical_string) {
-        $events = [];
-        $lines = explode("\n", $ical_string);
-        $current_event = [];
+		// Log successful sync
+		update_option( 'aiohm_booking_mvp_last_sync', current_time( 'mysql' ) );
+	}
 
-        foreach ($lines as $line) {
-            $line = trim($line);
-            if (strpos($line, 'BEGIN:VEVENT') !== false) {
-                $current_event = [];
-            } elseif (strpos($line, 'END:VEVENT') !== false) {
-                $events[] = $current_event;
-            } elseif ($current_event !== null) {
-                if (preg_match('/^(DTSTART|DTEND|SUMMARY|UID|DESCRIPTION|LOCATION|STATUS|SEQUENCE|TRANSP)(;VALUE=DATE)?[:;](.*)$/', $line, $matches)) {
-                    $key = $matches[1];
-                    $value = $matches[3];
-                    $current_event[$key] = $value;
-                }
-            }
-        }
+	/**
+	 * Fetch iCal events from external URL
+	 *
+	 * @since 1.0.0
+	 * @param string $url iCal feed URL
+	 * @return array Array of parsed events
+	 */
+	private static function fetch_ical_events( $url ) {
+		$response = wp_remote_get(
+			$url,
+			array(
+				'timeout'    => 30,
+				'user-agent' => 'AIOHM Booking iCal Sync/1.0',
+			)
+		);
 
-        return $events;
-    }
+		if ( is_wp_error( $response ) ) {
+			return array();
+		}
+
+		$body = wp_remote_retrieve_body( $response );
+		return self::parse_ical( $body );
+	}
+
+	/**
+	 * Process external events and add to blocked dates
+	 *
+	 * @since 1.0.0
+	 * @param array  $events Array of iCal events
+	 * @param array  $blocked_dates Existing blocked dates array
+	 * @param int    $available_rooms Number of available rooms
+	 * @param string $platform Platform name (e.g., 'Booking.com', 'Airbnb')
+	 * @return array Updated blocked dates array
+	 */
+	private static function process_external_events( $events, $blocked_dates, $available_rooms, $platform ) {
+		foreach ( $events as $event ) {
+			try {
+				$start_date = new \DateTime( $event['DTSTART'] );
+				$end_date   = new \DateTime( $event['DTEND'] );
+				$summary    = $event['SUMMARY'] ?? 'External Booking';
+				$uid        = $event['UID'] ?? '';
+
+				$period = new \DatePeriod( $start_date, new \DateInterval( 'P1D' ), $end_date );
+
+				foreach ( $period as $date ) {
+					for ( $i = 1; $i <= $available_rooms; $i++ ) {
+						$date_key = $date->format( 'Y-m-d' );
+						if ( ! isset( $blocked_dates[ $i ] ) ) {
+							$blocked_dates[ $i ] = array();
+						}
+						$blocked_dates[ $i ][ $date_key ] = array(
+							'status'       => 'external',
+							'reason'       => "[$platform] $summary",
+							'platform'     => strtolower( $platform ),
+							'external_uid' => $uid,
+							'blocked_at'   => current_time( 'mysql' ),
+						);
+					}
+				}
+			} catch ( \Exception $e ) {
+				// Skip invalid events
+				continue;
+			}
+		}
+
+		return $blocked_dates;
+	}
+
+	/**
+	 * Parse iCal format string into events array
+	 *
+	 * @since 1.0.0
+	 * @param string $ical_string iCal format string
+	 * @return array Array of parsed events
+	 */
+	private static function parse_ical( $ical_string ) {
+		$events        = array();
+		$lines         = explode( "\n", $ical_string );
+		$current_event = array();
+
+		foreach ( $lines as $line ) {
+			$line = trim( $line );
+			if ( strpos( $line, 'BEGIN:VEVENT' ) !== false ) {
+				$current_event = array();
+			} elseif ( strpos( $line, 'END:VEVENT' ) !== false ) {
+				$events[] = $current_event;
+			} elseif ( $current_event !== null ) {
+				if ( preg_match( '/^(DTSTART|DTEND|SUMMARY|UID|DESCRIPTION|LOCATION|STATUS|SEQUENCE|TRANSP)(;VALUE=DATE)?[:;](.*)$/', $line, $matches ) ) {
+					$key                   = $matches[1];
+					$value                 = $matches[3];
+					$current_event[ $key ] = $value;
+				}
+			}
+		}
+
+		return $events;
+	}
 }
