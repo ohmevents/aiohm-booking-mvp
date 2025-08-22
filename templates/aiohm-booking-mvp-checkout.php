@@ -170,7 +170,7 @@ if ($order && $rooms_enabled) {
               <div class="payment-method stripe-method">
                 <div class="payment-header">
                   <div class="payment-logo">
-                    <img src="<?php echo esc_url( aiohm_booking_mvp_asset_url('images/aiohm-booking-stripe.png') ); ?>" alt="Stripe" class="stripe-logo">
+                    <img src="<?php echo esc_url( \AIOHM\BookingMVP\Core\Assets::get_url('images/aiohm-booking-stripe.png') ); ?>" alt="Stripe" class="stripe-logo">
                   </div>
                   <div class="payment-info">
                     <h5>Credit Card</h5>
@@ -188,7 +188,7 @@ if ($order && $rooms_enabled) {
               <div class="payment-method paypal-method">
                 <div class="payment-header">
                   <div class="payment-logo">
-                    <img src="<?php echo esc_url( aiohm_booking_mvp_asset_url('images/aiohm-booking-mvp-paypal.svg') ); ?>" alt="PayPal" class="paypal-logo">
+                    <img src="<?php echo esc_url( \AIOHM\BookingMVP\Core\Assets::get_url('images/aiohm-booking-mvp-paypal.svg') ); ?>" alt="PayPal" class="paypal-logo">
                   </div>
                   <div class="payment-info">
                     <h5>PayPal</h5>

@@ -32,10 +32,6 @@ define('AIOHM_BOOKING_MVP_URL', plugin_dir_url(__FILE__));
 // Load Composer autoloader
 require_once AIOHM_BOOKING_MVP_DIR . 'vendor/autoload.php';
 
-// Load helper functions (non-class functions)
-require_once AIOHM_BOOKING_MVP_DIR.'includes/aiohm-booking-mvp-helpers.php';
-
-
 // Use namespaced classes
 use AIOHM\BookingMVP\Core\Activator;
 use AIOHM\BookingMVP\Events\Events;
@@ -115,15 +111,3 @@ class AIOHM_Booking_MVP {
 
 // Initialize the plugin
 AIOHM_Booking_MVP::get_instance();
-
-/**
- * Add settings link to plugin action links
- */
-function aiohm_booking_mvp_add_settings_link($links) {
-    $settings_link = '<a href="' . admin_url('admin.php?page=aiohm-booking-mvp-settings') . '">' . __('Settings', 'aiohm-booking-mvp') . '</a>';
-    array_unshift($links, $settings_link);
-    return $links;
-}
-
-// Add settings link filter
-add_filter('plugin_action_links_' . plugin_basename(__FILE__), 'aiohm_booking_mvp_add_settings_link');

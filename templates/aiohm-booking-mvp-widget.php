@@ -1,5 +1,5 @@
 <?php
-$opts = aiohm_booking_mvp_opts();
+$opts = \AIOHM\BookingMVP\Core\Settings::getAll();
 
 // Determine brand color from settings with sane defaults
 $brand_color = isset($opts['form_primary_color']) ? sanitize_hex_color($opts['form_primary_color']) : '#457d58';
@@ -20,10 +20,10 @@ $text_color = sanitize_hex_color($text_color_raw);
 // Accommodation booking only
 $rooms_enabled = true;
 
-$P = aiohm_booking_mvp_prices();
+$P = \AIOHM\BookingMVP\Core\Config::getPrices();
 
 // Get dynamic product names
-$product_names = aiohm_booking_mvp_get_product_names();
+$product_names = \AIOHM\BookingMVP\Core\Config::getProductNames();
 $singular = $product_names['singular_cap'];
 $plural = $product_names['plural_cap'];
 ?>

@@ -1,13 +1,13 @@
 <?php
 if (!defined('ABSPATH')) { exit; }
 
-$product_names = aiohm_booking_mvp_get_product_names();
+$product_names = \AIOHM\BookingMVP\Core\Config::getProductNames();
 ?>
 <div class="wrap aiohm-booking-mvp-admin">
     <div class="aiohm-header">
         <div class="aiohm-header-content">
             <div class="aiohm-logo">
-                <img src="<?php echo esc_url( aiohm_booking_mvp_asset_url('images/aiohm-booking-OHM_logo-black.svg') ); ?>" alt="AIOHM" class="aiohm-header-logo">
+                <img src="<?php echo esc_url( \AIOHM\BookingMVP\Core\Assets::get_url('images/aiohm-booking-OHM_logo-black.svg') ); ?>" alt="AIOHM" class="aiohm-header-logo">
             </div>
             <div class="aiohm-header-text">
                 <h1>AIOHM Booking Calendar</h1>

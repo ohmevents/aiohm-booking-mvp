@@ -6,6 +6,9 @@ use Exception;
 use DateTime;
 use DatePeriod;
 use DateInterval;
+use AIOHM\BookingMVP\Core\Settings;
+use AIOHM\BookingMVP\Core\Config;
+use AIOHM\BookingMVP\Core\Assets;
 
 if ( ! defined('ABSPATH') ) { exit; }
 
@@ -22,7 +25,23 @@ class Admin {
         add_action('admin_init',[__CLASS__,'handle_calendar_redirect']);
         add_action('admin_init', [__CLASS__, 'handle_custom_settings_save']);
         add_action('admin_init', [__CLASS__, 'handle_accommodation_details_save']);
+
+        // Add settings link to plugin page
+        add_filter('plugin_action_links_' . plugin_basename(AIOHM_BOOKING_MVP_FILE), [__CLASS__, 'add_settings_link']);
     }
+
+    /**
+     * Add settings link to plugin action links.
+     *
+     * @param array $links The existing links.
+     * @return array The modified links.
+     */
+    public static function add_settings_link($links) {
+        $settings_link = '<a href="' . admin_url('admin.php?page=aiohm-booking-mvp-settings') . '">' . __('Settings', 'aiohm-booking-mvp') . '</a>';
+        array_unshift($links, $settings_link);
+        return $links;
+    }
+
     public static function menu(){
         $menu_icon = self::get_menu_icon();
         add_menu_page('AIOHM Booking','AIOHM Booking','manage_options','aiohm-booking-mvp',[__CLASS__,'dash'],$menu_icon,27);
@@ -30,7 +49,7 @@ class Admin {
         add_submenu_page('aiohm-booking-mvp','Settings','Settings','manage_options','aiohm-booking-mvp-settings',[__CLASS__,'settings']);
 
         // Get settings to determine which menu items to show
-        $settings = function_exists('aiohm_booking_mvp_opts') ? aiohm_booking_mvp_opts() : get_option('aiohm_booking_mvp_settings', []);
+        $settings = Settings::getAll();
         
         // Default to enabled if settings are missing (initial setup)
         $rooms_enabled = !empty($settings['enable_rooms']) || empty($settings);
@@ -98,7 +117,7 @@ class Admin {
      * Sends a JSON error and dies if consent is not granted.
      */
     private static function check_ai_consent() {
-        $settings = aiohm_booking_mvp_opts();
+        $settings = Settings::getAll();
         $global_consent = !empty($settings['ai_api_consent']);
 
         if (!$global_consent) {
@@ -124,7 +143,7 @@ class Admin {
         }
 
         self::check_ai_consent();
-        $settings = aiohm_booking_mvp_opts();
+        $settings = Settings::getAll();
         $provider = $settings['default_ai_provider'] ?? 'shareai';
         $ai = new \AIOHM\BookingMVP\AI\Client();
 
@@ -171,7 +190,7 @@ class Admin {
         }
 
         self::check_ai_consent();
-        $settings = aiohm_booking_mvp_opts();
+        $settings = Settings::getAll();
         $provider = $settings['default_ai_provider'] ?? 'shareai';
         $ai = new \AIOHM\BookingMVP\AI\Client();
 
@@ -299,7 +318,7 @@ class Admin {
         }
 
         self::check_ai_consent();
-        $settings = aiohm_booking_mvp_opts();
+        $settings = Settings::getAll();
         $provider = $settings['default_ai_provider'] ?? 'shareai';
         $ai = new \AIOHM\BookingMVP\AI\Client();
 
@@ -486,10 +505,10 @@ class Admin {
 
         $consent = !empty($_POST['consent']);
         
-        $settings = aiohm_booking_mvp_opts();
+        $settings = Settings::getAll();
         $settings['ai_api_consent'] = $consent ? '1' : '0';
         
-        update_option('aiohm_booking_mvp_settings', $settings);
+        Settings::update($settings);
         
         wp_send_json_success([
             'message' => 'Consent settings saved successfully.'
@@ -576,13 +595,13 @@ class Admin {
         }
 
         // Get current settings
-        $settings = aiohm_booking_mvp_opts();
+        $settings = Settings::getAll();
 
         $key_name = $provider . '_api_key';
         $settings[$key_name] = $api_key;
 
         // Save settings
-        $result = update_option('aiohm_booking_mvp_settings', $settings);
+        $result = Settings::update($settings);
 
         // Double check with direct get_option
         $check_settings = get_option('aiohm_booking_mvp_settings', []);
@@ -613,10 +632,10 @@ class Admin {
             wp_send_json_error('Invalid provider');
         }
 
-        $settings = aiohm_booking_mvp_opts();
+        $settings = Settings::getAll();
         $settings['default_ai_provider'] = $provider;
 
-        $result = update_option('aiohm_booking_mvp_settings', $settings);
+        $result = Settings::update($settings);
 
         if ($result === false && get_option('aiohm_booking_mvp_settings')['default_ai_provider'] !== $provider) {
             wp_send_json_error('Failed to set default provider');
@@ -650,7 +669,7 @@ class Admin {
         $accommodation_details = get_option('aiohm_booking_mvp_accommodations_details', []);
 
         // Determine default title if empty
-        $names = function_exists('aiohm_booking_mvp_get_product_names') ? aiohm_booking_mvp_get_product_names() : ['singular_cap' => 'Accommodation'];
+        $names = Config::getProductNames();
         $default_singular = $names['singular_cap'] ?? 'Accommodation';
         $incoming_title = trim((string)($accommodation_data['title'] ?? ''));
         if ($incoming_title === '') {
@@ -703,8 +722,8 @@ class Admin {
         $is_dark_theme = in_array($admin_color, ['midnight', 'blue', 'coffee', 'ectoplasm', 'ocean']);
         // Use the OHM logo SVG files
         $logo_path = $is_dark_theme
-            ? aiohm_booking_mvp_asset_path('images/aiohm-booking-OHM_logo-white.svg')
-            : aiohm_booking_mvp_asset_path('images/aiohm-booking-OHM_logo-black.svg');
+            ? Assets::get_path('images/aiohm-booking-OHM_logo-white.svg')
+            : Assets::get_path('images/aiohm-booking-OHM_logo-black.svg');
         if (file_exists($logo_path)) {
             $svg_content = file_get_contents($logo_path);
             if ($svg_content !== false) {
@@ -727,7 +746,7 @@ class Admin {
         $total_revenue = $wpdb->get_var($wpdb->prepare("SELECT SUM(total_amount) FROM {$table} WHERE status = %s", 'paid')) ?: 0;
 
         // Get currency setting for revenue display
-        $settings = aiohm_booking_mvp_opts();
+        $settings = Settings::getAll();
         $currency = $settings['currency'] ?? 'EUR';
 
         ?>
@@ -736,7 +755,7 @@ class Admin {
                 <div class="aiohm-header-content">
                     <div class="aiohm-logo">
                         <a href="<?php echo esc_url(admin_url('admin.php?page=aiohm-booking-mvp')); ?>">
-                            <img src="<?php echo esc_url( aiohm_booking_mvp_asset_url('images/aiohm-booking-OHM_logo-black.svg') ); ?>" alt="AIOHM" class="aiohm-header-logo">
+                            <img src="<?php echo esc_url( Assets::get_url('images/aiohm-booking-OHM_logo-black.svg') ); ?>" alt="AIOHM" class="aiohm-header-logo">
                         </a>
                     </div>
                     <div class="aiohm-header-text">
@@ -1081,7 +1100,7 @@ class Admin {
             <div class="aiohm-header">
                 <div class="aiohm-header-content">
                     <div class="aiohm-logo">
-                        <img src="<?php echo esc_url( aiohm_booking_mvp_asset_url('images/aiohm-booking-OHM_logo-black.svg') ); ?>" alt="AIOHM" class="aiohm-header-logo">
+                        <img src="<?php echo esc_url( Assets::get_url('images/aiohm-booking-OHM_logo-black.svg') ); ?>" alt="AIOHM" class="aiohm-header-logo">
                     </div>
                     <div class="aiohm-header-text">
                         <h1>Orders Management</h1>
@@ -1176,7 +1195,7 @@ class Admin {
 
             <!-- AI Order Insights Section -->
             <?php
-            $settings = aiohm_booking_mvp_opts();
+            $settings = Settings::getAll();
             $ai_enabled = !empty($settings['enable_shareai']) || !empty($settings['enable_openai']) || !empty($settings['enable_gemini']);
 
             if ($ai_enabled) {
@@ -1246,7 +1265,7 @@ class Admin {
             <div class="aiohm-header">
                 <div class="aiohm-header-content">
                     <div class="aiohm-logo">
-                        <img src="<?php echo esc_url( aiohm_booking_mvp_asset_url('images/aiohm-booking-OHM_logo-black.svg') ); ?>" alt="AIOHM" class="aiohm-header-logo">
+                        <img src="<?php echo esc_url( Assets::get_url('images/aiohm-booking-OHM_logo-black.svg') ); ?>" alt="AIOHM" class="aiohm-header-logo">
                     </div>
                     <div class="aiohm-header-text">
                         <h1>AIOHM Booking Module Configuration</h1>
@@ -1866,7 +1885,7 @@ class Admin {
         $allow_private = !empty($o['allow_private_all']);
 
         // Get dynamic product names
-        $product_names = aiohm_booking_mvp_get_product_names();
+        $product_names = Config::getProductNames();
         $singular = $product_names['singular_cap'];
         $plural = $product_names['plural_cap'];
 
@@ -1877,7 +1896,7 @@ class Admin {
             <div class="aiohm-header">
                 <div class="aiohm-header-content">
                     <div class="aiohm-logo">
-                        <img src="<?php echo esc_url( aiohm_booking_mvp_asset_url('images/aiohm-booking-OHM_logo-black.svg') ); ?>" alt="AIOHM" class="aiohm-header-logo">
+                        <img src="<?php echo esc_url( Assets::get_url('images/aiohm-booking-OHM_logo-black.svg') ); ?>" alt="AIOHM" class="aiohm-header-logo">
                     </div>
                     <div class="aiohm-header-text">
                         <h1><?php echo esc_html($singular); ?> Module Management</h1>
@@ -2031,7 +2050,7 @@ class Admin {
             <div class="aiohm-header">
                 <div class="aiohm-header-content">
                     <div class="aiohm-logo">
-                        <img src="<?php echo esc_url( aiohm_booking_mvp_asset_url('images/aiohm-booking-OHM_logo-black.svg') ); ?>" alt="AIOHM" class="aiohm-header-logo">
+                        <img src="<?php echo esc_url( Assets::get_url('images/aiohm-booking-OHM_logo-black.svg') ); ?>" alt="AIOHM" class="aiohm-header-logo">
                     </div>
                     <div class="aiohm-header-text">
                         <h1>Notification Module Management</h1>
@@ -2643,14 +2662,14 @@ Use merge tags to personalize the email content."></textarea>
 
         if ($is_aiohm_page) {
             // Verify CSS file exists before enqueuing
-            $admin_css_path = aiohm_booking_mvp_asset_path('css/aiohm-booking-mvp-admin.css');
-            $provider_css_path = aiohm_booking_mvp_asset_path('css/aiohm-booking-mvp-provider-icons.css');
-            $calendar_css_path = aiohm_booking_mvp_asset_path('css/aiohm-booking-mvp-calendar.css');
+            $admin_css_path = Assets::get_path('css/aiohm-booking-mvp-admin.css');
+            $provider_css_path = Assets::get_path('css/aiohm-booking-mvp-provider-icons.css');
+            $calendar_css_path = Assets::get_path('css/aiohm-booking-mvp-calendar.css');
             
             if (file_exists($admin_css_path)) {
                 wp_enqueue_style(
                     'aiohm-booking-mvp-admin',
-                    aiohm_booking_mvp_asset_url('css/aiohm-booking-mvp-admin.css'),
+                    Assets::get_url('css/aiohm-booking-mvp-admin.css'),
                     [],
                     AIOHM_BOOKING_MVP_VERSION
                 );
@@ -2660,7 +2679,7 @@ Use merge tags to personalize the email content."></textarea>
             if (file_exists($provider_css_path)) {
                 wp_enqueue_style(
                     'aiohm-booking-mvp-provider-icons',
-                    aiohm_booking_mvp_asset_url('css/aiohm-booking-mvp-provider-icons.css'),
+                    Assets::get_url('css/aiohm-booking-mvp-provider-icons.css'),
                     [],
                     AIOHM_BOOKING_MVP_VERSION
                 );
@@ -2670,18 +2689,18 @@ Use merge tags to personalize the email content."></textarea>
             if (file_exists($calendar_css_path)) {
                 wp_enqueue_style(
                     'aiohm-booking-mvp-calendar',
-                    aiohm_booking_mvp_asset_url('css/aiohm-booking-mvp-calendar.css'),
+                    Assets::get_url('css/aiohm-booking-mvp-calendar.css'),
                     [],
                     AIOHM_BOOKING_MVP_VERSION
                 );
             }
 
             // Load admin JavaScript
-            $admin_js_path = aiohm_booking_mvp_asset_path('js/aiohm-booking-mvp-admin.js');
+            $admin_js_path = Assets::get_path('js/aiohm-booking-mvp-admin.js');
             if (file_exists($admin_js_path)) {
                 wp_enqueue_script(
                     'aiohm-booking-mvp-admin',
-                    aiohm_booking_mvp_asset_url('js/aiohm-booking-mvp-admin.js'),
+                    Assets::get_url('js/aiohm-booking-mvp-admin.js'),
                     ['jquery'],
                     AIOHM_BOOKING_MVP_VERSION,
                     true
@@ -2718,15 +2737,15 @@ Use merge tags to personalize the email content."></textarea>
             $main_css_loaded = wp_style_is('aiohm-booking-mvp-admin', 'enqueued');
             
             if (!$main_css_loaded) {
-                $css_url = aiohm_booking_mvp_asset_url('css/aiohm-booking-mvp-admin.css');
-                $css_path = aiohm_booking_mvp_asset_path('css/aiohm-booking-mvp-admin.css');
+                $css_url = Assets::get_url('css/aiohm-booking-mvp-admin.css');
+                $css_path = Assets::get_path('css/aiohm-booking-mvp-admin.css');
                 
                 if (file_exists($css_path)) {
                     wp_enqueue_style('aiohm-booking-mvp-admin-backup', $css_url, array(), AIOHM_BOOKING_MVP_VERSION);
                     
                     // Also load provider icons
-                    $provider_css_url = aiohm_booking_mvp_asset_url('css/aiohm-booking-mvp-provider-icons.css');
-                    $provider_css_path = aiohm_booking_mvp_asset_path('css/aiohm-booking-mvp-provider-icons.css');
+                    $provider_css_url = Assets::get_url('css/aiohm-booking-mvp-provider-icons.css');
+                    $provider_css_path = Assets::get_path('css/aiohm-booking-mvp-provider-icons.css');
                     if (file_exists($provider_css_path)) {
                         wp_enqueue_style('aiohm-booking-mvp-provider-icons-backup', $provider_css_url, array(), AIOHM_BOOKING_MVP_VERSION);
                     }

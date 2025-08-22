@@ -23,6 +23,53 @@ class Security {
      */
     public static function init() {
         add_filter('wp_headers', [__CLASS__, 'maybe_relax_csp_for_checkout'], 20, 1);
+
+        // SSL and mixed content fixes
+        add_filter('style_loader_src', [__CLASS__, 'force_ssl_for_assets'], 999);
+        add_filter('script_loader_src', [__CLASS__, 'force_ssl_for_assets'], 999);
+
+        if (is_ssl() && !is_admin()) {
+            add_action('template_redirect', [__CLASS__, 'fix_mixed_content_buffer'], 1);
+        }
+    }
+
+    /**
+     * Force SSL for all enqueued assets to prevent mixed content errors.
+     *
+     * @param string $url The asset URL.
+     * @return string The corrected asset URL.
+     */
+    public static function force_ssl_for_assets($url) {
+        if (is_ssl()) {
+            $url = str_replace('http://', 'https://', $url);
+        }
+        return $url;
+    }
+
+    /**
+     * Fix mixed content issues by starting an output buffer.
+     */
+    public static function fix_mixed_content_buffer() {
+        if (is_ssl() && !is_admin()) {
+            ob_start([__CLASS__, 'force_https_in_content']);
+        }
+    }
+
+    /**
+     * Force HTTPS in the final buffered content.
+     *
+     * @param string $content The buffered content.
+     * @return string The modified content.
+     */
+    public static function force_https_in_content($content) {
+        if (is_ssl()) {
+            // Fix font URLs and other asset URLs that might be loaded over HTTP
+            $content = preg_replace('/http:\/\/([^\/]+)\/wp-content\/uploads\/elementor\/google-fonts\/fonts\//i', 'https://$1/wp-content/uploads/elementor/google-fonts/fonts/', $content);
+
+            // More comprehensive fix for any HTTP asset URLs in content
+            $content = preg_replace('/http:\/\/([^\/]+)\/wp-content\//i', 'https://$1/wp-content/', $content);
+        }
+        return $content;
     }
 
     /**
