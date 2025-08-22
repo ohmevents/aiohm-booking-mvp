@@ -2,6 +2,9 @@
 
 namespace AIOHM\BookingMVP\API;
 
+use AIOHM\BookingMVP\Core\Settings;
+use AIOHM\BookingMVP\Core\Config;
+
 if ( ! defined('ABSPATH') ) { exit; }
 
 /**
@@ -93,7 +96,7 @@ class API {
         try {
             global $wpdb;
             $p = $r->get_json_params();
-            $opts = aiohm_booking_mvp_prices();
+            $opts = Config::getPrices();
 
         // Validate required fields
         $name = sanitize_text_field($p['name'] ?? '');
@@ -122,7 +125,7 @@ class API {
 
         // Validate minimum age requirement (only if age field is enabled and minimum age is set)
         $age = intval($p['age'] ?? 0);
-        $settings = aiohm_booking_mvp_opts();
+        $settings = Settings::getAll();
         $age_field_enabled = !empty($settings['form_field_age']);
         $min_age = intval($settings['min_age'] ?? 0);
         
@@ -131,7 +134,7 @@ class API {
         }
 
         // Validate mode settings
-        $rooms_enabled = aiohm_booking_mvp_enabled_rooms();
+        $rooms_enabled = Config::areRoomsEnabled();
         if (!$rooms_enabled) {
             return new \WP_Error('rooms_disabled', 'Accommodation booking is not enabled', ['status' => 400]);
         }
@@ -395,8 +398,8 @@ class API {
             'payment_method_types' => ['card'],
             'line_items' => $line_items,
             'mode' => 'payment',
-            'success_url' => aiohm_booking_mvp_opt('thankyou_page_url', home_url('/')) . '?order_id=' . $order_id,
-            'cancel_url' => aiohm_booking_mvp_opt('checkout_page_url', home_url('/')) . '?order_id=' . $order_id . '&cancelled=true',
+            'success_url' => Settings::get('thankyou_page_url', home_url('/')) . '?order_id=' . $order_id,
+            'cancel_url' => Settings::get('checkout_page_url', home_url('/')) . '?order_id=' . $order_id . '&cancelled=true',
             'client_reference_id' => $order->id,
             'customer_email' => $order->buyer_email,
         ];

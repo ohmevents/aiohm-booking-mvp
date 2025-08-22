@@ -2,6 +2,9 @@
 
 namespace AIOHM\BookingMVP\Shortcodes;
 
+use AIOHM\BookingMVP\Core\Assets;
+use AIOHM\BookingMVP\Core\Settings;
+
 if ( ! defined('ABSPATH') ) { exit; }
 
 /**
@@ -38,14 +41,14 @@ class Shortcodes {
      * @return void
      */
     public static function assets(){
-        wp_register_style('aiohm-booking-mvp', aiohm_booking_mvp_asset_url('css/aiohm-booking-mvp-style.css'),[],AIOHM_BOOKING_MVP_VERSION);
+        wp_register_style('aiohm-booking-mvp', Assets::get_url('css/aiohm-booking-mvp-style.css'),[],AIOHM_BOOKING_MVP_VERSION);
         wp_enqueue_style('aiohm-booking-mvp');
-        wp_register_script('aiohm-booking-mvp', aiohm_booking_mvp_asset_url('dist/js/frontend.bundle.js'),['jquery', 'wp-element'],AIOHM_BOOKING_MVP_VERSION,true);
+        wp_register_script('aiohm-booking-mvp', Assets::get_url('dist/js/frontend.bundle.js'),['jquery', 'wp-element'],AIOHM_BOOKING_MVP_VERSION,true);
         wp_localize_script('aiohm-booking-mvp','AIOHM_BOOKING',[
             'rest' => esc_url_raw( rest_url('aiohm-booking-mvp/v1') ),
             'nonce' => wp_create_nonce('wp_rest'),
-            'checkout_url' => aiohm_booking_mvp_opt('checkout_page_url', ''),
-            'thankyou_url' => aiohm_booking_mvp_opt('thankyou_page_url', ''),
+            'checkout_url' => Settings::get('checkout_page_url', ''),
+            'thankyou_url' => Settings::get('thankyou_page_url', ''),
             'i18n' => [
                 'unexpectedError' => esc_html__('An unexpected error occurred. Please try again.', 'aiohm-booking-mvp'),
                 'requestTimeout' => esc_html__('Request timed out. Please check your connection and try again.', 'aiohm-booking-mvp'),
@@ -117,7 +120,7 @@ class Shortcodes {
         }
 
         // Handle dynamic inline styles for text color
-        $opts = aiohm_booking_mvp_opts();
+        $opts = Settings::getAll();
         $text_color_raw = $opts['form_text_color'] ?? '';
         $text_color = sanitize_hex_color($text_color_raw);
         $instance_id = 'aiohm-booking-mvp-' . uniqid(); // Generate a unique ID for the widget
@@ -153,13 +156,13 @@ class Shortcodes {
         // Enqueue checkout specific assets
         wp_enqueue_style(
             'aiohm-booking-mvp-checkout',
-            aiohm_booking_mvp_asset_url('css/aiohm-booking-mvp-checkout.css'),
+            Assets::get_url('css/aiohm-booking-mvp-checkout.css'),
             ['aiohm-booking-mvp'],
             AIOHM_BOOKING_MVP_VERSION
         );
         wp_enqueue_script(
             'aiohm-booking-mvp-checkout',
-            aiohm_booking_mvp_asset_url('js/aiohm-booking-mvp-checkout.js'),
+            Assets::get_url('js/aiohm-booking-mvp-checkout.js'),
             [],
             AIOHM_BOOKING_MVP_VERSION,
             true
@@ -189,7 +192,7 @@ class Shortcodes {
             'nonce' => wp_create_nonce('wp_rest'),
             'stripe_session_url' => esc_url_raw(rest_url('aiohm-booking-mvp/v1/stripe/session')),
             'paypal_capture_url' => esc_url_raw(rest_url('aiohm-booking-mvp/v1/paypal/capture')),
-            'thankyou_url' => esc_url_raw(aiohm_booking_mvp_opt('thankyou_page_url', home_url())),
+            'thankyou_url' => esc_url_raw(Settings::get('thankyou_page_url', home_url())),
             'paypal_ready' => !empty($settings['enable_paypal']) && !empty($paypal_client_id),
             'paypal_client_id' => $paypal_client_id,
             'currency' => $order->currency ?? 'USD',

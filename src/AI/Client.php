@@ -2,6 +2,8 @@
 
 namespace AIOHM\BookingMVP\AI;
 
+use AIOHM\BookingMVP\Core\Settings;
+
 /**
  * AI client for AIOHM Booking multi-provider API requests
  * Handles OpenAI, Google Gemini, and ShareAI integrations for booking assistance
@@ -26,7 +28,7 @@ class Client {
      */
     public function __construct($settings = null) {
         if ($settings === null) {
-            $this->settings = aiohm_booking_mvp_opts();
+            $this->settings = Settings::getAll();
         } else {
             $this->settings = $settings;
         }

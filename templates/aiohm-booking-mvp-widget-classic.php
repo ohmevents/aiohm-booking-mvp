@@ -1,10 +1,10 @@
 <?php
-$opts = aiohm_booking_mvp_opts();
+$opts = \AIOHM\BookingMVP\Core\Settings::getAll();
 
 // Accommodation booking only
 $rooms_enabled = true;
 
-$P = aiohm_booking_mvp_prices();
+$P = \AIOHM\BookingMVP\Core\Config::getPrices();
 ?>
 <div class="aiohm-booking-mvp">
   <?php if(!$rooms_enabled): ?>
