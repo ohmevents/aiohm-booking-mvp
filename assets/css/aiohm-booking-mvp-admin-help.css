@@ -1,6 +1,7 @@
 /* AIOHM Booking Brand Identity */
-.aiohm-booking-help-page {
+.aiohm-booking-mvp-help-page {
     --ohm-primary: #457d58;
+    --ohm-primary-dark: #3a6b4a; /* Darker shade of primary */
     --ohm-dark: #272727;
     --ohm-light-accent: #cbddd1;
     --ohm-muted-accent: #7d9b76;
@@ -12,7 +13,7 @@
 }
 
 /* Header Section */
-.aiohm-booking-help-header {
+.aiohm-booking-mvp-help-header {
     text-align: center;
     margin-bottom: 2rem;
     padding: 2rem 0;
@@ -21,7 +22,7 @@
     color: white;
 }
 
-.aiohm-booking-help-header h1 {
+.aiohm-booking-mvp-help-header h1 {
     font-family: var(--ohm-font-primary);
     font-size: 2.5rem;
     font-weight: 700;
@@ -31,7 +32,7 @@
     letter-spacing: 2px;
 }
 
-.aiohm-booking-help-header .help-description {
+.aiohm-booking-mvp-help-header .help-description {
     font-family: var(--ohm-font-secondary);
     font-size: 1.1rem;
     margin: 0;
@@ -855,11 +856,11 @@
         grid-template-columns: 1fr;
     }
 
-    .aiohm-booking-help-header {
+    .aiohm-booking-mvp-help-header {
         padding: 1.5rem 1rem;
     }
 
-    .aiohm-booking-help-header h1 {
+    .aiohm-booking-mvp-help-header h1 {
         font-size: 2rem;
     }
 

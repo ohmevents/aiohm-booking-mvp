@@ -2694,6 +2694,19 @@ Use merge tags to personalize the email content."></textarea>
                     AIOHM_BOOKING_MVP_VERSION
                 );
             }
+            
+            // Load help-specific CSS on help page
+            if (strpos($screen->id, 'aiohm-booking-mvp-get-help') !== false) {
+                $help_css_path = Assets::get_path('css/aiohm-booking-mvp-admin-help.css');
+                if (file_exists($help_css_path)) {
+                    wp_enqueue_style(
+                        'aiohm-booking-mvp-admin-help',
+                        Assets::get_url('css/aiohm-booking-mvp-admin-help.css'),
+                        [],
+                        AIOHM_BOOKING_MVP_VERSION
+                    );
+                }
+            }
 
             // Load admin JavaScript
             $admin_js_path = Assets::get_path('js/aiohm-booking-mvp-admin.js');
@@ -2715,6 +2728,26 @@ Use merge tags to personalize the email content."></textarea>
                         'savingSettings' => esc_html__('Saving settings and updating menu...', 'aiohm-booking-mvp'),
                     ]
                 ]);
+            }
+            
+            // Load help-specific JavaScript on help page
+            if (strpos($screen->id, 'aiohm-booking-mvp-get-help') !== false) {
+                $help_js_path = Assets::get_path('js/aiohm-booking-mvp-admin-help.js');
+                if (file_exists($help_js_path)) {
+                    wp_enqueue_script(
+                        'aiohm-booking-mvp-admin-help',
+                        Assets::get_url('js/aiohm-booking-mvp-admin-help.js'),
+                        ['jquery'],
+                        AIOHM_BOOKING_MVP_VERSION,
+                        true
+                    );
+                    
+                    // Localize script for help page AJAX
+                    wp_localize_script('aiohm-booking-mvp-admin-help', 'aiohm_help_ajax', [
+                        'ajax_url' => admin_url('admin-ajax.php'),
+                        'nonce' => wp_create_nonce('aiohm_booking_mvp_admin_nonce'),
+                    ]);
+                }
             }
         }
     }
@@ -3166,5 +3199,113 @@ Use merge tags to personalize the email content."></textarea>
         ];
 
         return $templates[$type] ?? '';
+    }
+
+    /**
+     * Render AI module card
+     */
+    private static function render_ai_module_card($provider_id, $provider_name, $emoji, $description, $options, $default_ai_provider) {
+        $is_enabled = !empty($options["enable_ai_{$provider_id}"]);
+        $api_key = $options["ai_{$provider_id}_api_key"] ?? '';
+        $is_default = ($default_ai_provider === $provider_id);
+        ?>
+        <div class="aiohm-module-card module-ai <?php echo $is_enabled ? 'is-active' : 'is-inactive'; ?> <?php echo $is_default ? 'is-default' : ''; ?>" data-provider="<?php echo esc_attr($provider_id); ?>">
+            <div class="aiohm-module-header">
+                <h3><?php echo esc_html($emoji); ?> <?php echo esc_html($provider_name); ?></h3>
+                <div class="aiohm-module-actions">
+                    <?php if ($is_default): ?>
+                        <span class="aiohm-default-badge">Default</span>
+                    <?php else: ?>
+                        <button type="button" class="aiohm-set-default-btn" data-provider="<?php echo esc_attr($provider_id); ?>" title="Set as default AI provider">Set Default</button>
+                    <?php endif; ?>
+                    <label class="aiohm-toggle" title="Enable or disable <?php echo esc_attr($provider_name); ?>">
+                        <input type="checkbox" name="aiohm_booking_mvp_settings[enable_ai_<?php echo esc_attr($provider_id); ?>]" value="1" <?php checked($is_enabled); ?>>
+                        <span class="aiohm-toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+            <p class="aiohm-module-description"><?php echo esc_html($description); ?></p>
+            <div class="aiohm-module-settings">
+                <div class="aiohm-setting-row">
+                    <label>API Key</label>
+                    <div class="aiohm-api-key-input">
+                        <input type="password" name="aiohm_booking_mvp_settings[ai_<?php echo esc_attr($provider_id); ?>_api_key]" value="<?php echo esc_attr($api_key); ?>" placeholder="Enter your <?php echo esc_attr($provider_name); ?> API key" class="regular-text" />
+                        <button type="button" class="aiohm-test-api-key-btn" data-provider="<?php echo esc_attr($provider_id); ?>" <?php echo empty($api_key) ? 'disabled' : ''; ?>>Test</button>
+                    </div>
+                    <small>Required for AI functionality. Your API key is stored securely.</small>
+                </div>
+            </div>
+        </div>
+        <?php
+    }
+
+    /**
+     * Render AI Order Insights section
+     */
+    private static function renderAIOrderInsights() {
+        // Get default AI provider and map to display name
+        $settings = Settings::getAll();
+        $default_provider = $settings['default_ai_provider'] ?? 'shareai';
+        
+        $provider_names = [
+            'shareai' => 'ShareAI',
+            'openai' => 'OpenAI',
+            'gemini' => 'Google Gemini'
+        ];
+        
+        $provider_display_name = $provider_names[$default_provider] ?? 'AI';
+        ?>
+        <div class="aiohm-booking-ai-query">
+            <h3>AI Order Insights</h3>
+            <p>Ask natural language questions about your orders, bookings, customer data, and business performance.</p>
+            
+            <div class="aiohm-ai-query-interface">
+                <div class="aiohm-query-input-section">
+                    <div class="aiohm-query-input-wrapper">
+                        <textarea id="ai-order-query-input" placeholder="Ask questions like: 'How many pending orders do I have?' or 'What's my total revenue this month?' or 'Which customers have the most bookings?'" rows="3"></textarea>
+                        <button type="button" id="submit-ai-order-query" class="button button-primary">
+                            Ask
+                        </button>
+                    </div>
+                    <div class="aiohm-query-examples">
+                        <small><strong>Example questions:</strong></small>
+                        <ul class="aiohm-example-queries">
+                            <li><a href="#" data-query="How many orders do I have and what are their statuses?">📊 Order statistics</a></li>
+                            <li><a href="#" data-query="What's my total revenue and average booking value?">💰 Revenue analysis</a></li>
+                            <li><a href="#" data-query="Which customers have made multiple bookings?">👥 Customer insights</a></li>
+                            <li><a href="#" data-query="What are the most popular booking dates and rooms?">📈 Booking trends</a></li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div id="ai-order-response-area" class="aiohm-ai-response-area" style="display: none;">
+                    <div class="aiohm-response-header">
+                        <h4>AI Response</h4>
+                        <span class="aiohm-provider-badge"></span>
+                    </div>
+                    <div class="aiohm-response-content">
+                        <div class="aiohm-response-card">
+                            <div id="ai-order-response-text"></div>
+                        </div>
+                    </div>
+                    <div class="aiohm-response-actions">
+                        <button type="button" id="copy-ai-order-response" class="button button-secondary">
+                            <span class="dashicons dashicons-clipboard"></span>
+                            Copy Response
+                        </button>
+                        <button type="button" id="clear-ai-order-response" class="button button-secondary">
+                            <span class="dashicons dashicons-dismiss"></span>
+                            Clear
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="ai-order-query-loading" class="aiohm-loading-indicator" style="display: none;">
+                    <div class="aiohm-loading-spinner"></div>
+                    <span>AI is analyzing your order data...</span>
+                </div>
+            </div>
+        </div>
+        <?php
     }
 }
