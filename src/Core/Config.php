@@ -23,7 +23,7 @@ class Config {
 	 * @since 1.0.0
 	 * @return bool
 	 */
-	public static function areRoomsEnabled() {
+	public static function are_rooms_enabled() {
 		return ! empty( Settings::get( 'enable_rooms', 1 ) );
 	}
 
@@ -33,7 +33,7 @@ class Config {
 	 * @since 1.0.0
 	 * @return array
 	 */
-	public static function getPrices() {
+	public static function get_prices() {
 		return array(
 			'room_price'        => floatval( Settings::get( 'room_price', 0.00 ) ),
 			'deposit_percent'   => floatval( Settings::get( 'deposit_percent', 30.0 ) ),
@@ -49,8 +49,8 @@ class Config {
 	 * @since 1.0.0
 	 * @return array Array with singular and plural product names.
 	 */
-	public static function getProductNames() {
-		$settings = Settings::getAll();
+	public static function get_product_names() {
+		$settings = Settings::get_all();
 
 		// Check new field name first, then fall back to old name for backward compatibility
 		$accommodation_type_name = $settings['accommodation_product_name'] ?? $settings['room_product_name'] ?? 'room';

@@ -1,7 +1,7 @@
 <?php
 if (!defined('ABSPATH')) { exit; }
 
-$product_names = \AIOHM\BookingMVP\Core\Config::getProductNames();
+$product_names = \AIOHM\BookingMVP\Core\Config::get_product_names();
 ?>
 <div class="wrap aiohm-booking-mvp-admin">
     <div class="aiohm-header">

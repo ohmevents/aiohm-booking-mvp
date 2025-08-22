@@ -145,7 +145,7 @@ class Calendar {
 		$current_quarter = ceil( current_time( 'n' ) / 3 );
 		$target_quarter  = $current_quarter + $quarter_page;
 		$year            = current_time( 'Y' ) + floor( $target_quarter / 4 );
-		$quarter         = $target_quarter % 4 ?: 4;
+		$quarter         = $target_quarter % 4 ? $target_quarter % 4 : 4;
 
 		$first_month = ( $quarter - 1 ) * 3 + 1;
 		$last_month  = $quarter * 3;
@@ -236,7 +236,7 @@ class Calendar {
 		$room_count = intval( $settings['available_rooms'] ?? self::DEFAULT_ROOM_COUNT );
 
 		$accommodation_details = get_option( 'aiohm_booking_mvp_accommodations_details', array() );
-		$product_names         = Config::getProductNames();
+		$product_names         = Config::get_product_names();
 
 		$this->room_posts = array();
 
@@ -766,7 +766,7 @@ class Calendar {
 		$room_count    = count( $this->room_posts );
 		$calendar_size = ( $room_count > 5 ) ? 'default' : 'large';
 
-		$product_names = Config::getProductNames();
+		$product_names = Config::get_product_names();
 		?>
 		<div class="aiohm-bookings-calendar-wrapper">
 			<?php $this->renderCalendarFilters(); ?>
@@ -781,7 +781,7 @@ class Calendar {
 			<?php $this->renderFooterFilters(); ?>
 			<?php $this->renderSyncModules(); ?>
 			<?php
-			$settings   = Settings::getAll();
+			$settings   = Settings::get_all();
 			$ai_enabled = ! empty( $settings['enable_shareai'] ) || ! empty( $settings['enable_openai'] ) || ! empty( $settings['enable_gemini'] );
 
 			if ( $ai_enabled ) {
@@ -796,7 +796,7 @@ class Calendar {
 	 * Render calendar filter controls
 	 */
 	private function renderCalendarFilters() {
-		$product_names = Config::getProductNames();
+		$product_names = Config::get_product_names();
 		?>
 		<div class="aiohm-bookings-calendar-filters-wrapper">
 			<form id="aiohm-bookings-calendar-filters" method="get" class="wp-filter">
@@ -1560,7 +1560,7 @@ class Calendar {
 	 */
 	private function renderAITableInsights() {
 		// Get default AI provider and map to display name
-		$settings         = Settings::getAll();
+		$settings         = Settings::get_all();
 		$default_provider = $settings['default_ai_provider'] ?? 'shareai';
 
 		$provider_names = array(

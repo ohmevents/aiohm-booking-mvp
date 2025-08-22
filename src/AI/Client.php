@@ -30,7 +30,7 @@ class Client {
 	 */
 	public function __construct( $settings = null ) {
 		if ( $settings === null ) {
-			$this->settings = Settings::getAll();
+			$this->settings = Settings::get_all();
 		} else {
 			$this->settings = $settings;
 		}

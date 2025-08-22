@@ -132,12 +132,12 @@ class Shortcodes {
 		// Override global settings if specific type is requested - rooms only now
 		if ( $atts['type'] !== 'auto' ) {
 			$GLOBALS['aiohm_booking_mvp_shortcode_override'] = array(
-				'enable_rooms' => in_array( $atts['type'], array( 'rooms', 'accommodation' ) ),
+				'enable_rooms' => in_array( $atts['type'], array( 'rooms', 'accommodation' ), true ),
 			);
 		}
 
 		// Handle dynamic inline styles for text color
-		$opts           = Settings::getAll();
+		$opts           = Settings::get_all();
 		$text_color_raw = $opts['form_text_color'] ?? '';
 		$text_color     = sanitize_hex_color( $text_color_raw );
 		$instance_id    = 'aiohm-booking-mvp-' . uniqid(); // Generate a unique ID for the widget

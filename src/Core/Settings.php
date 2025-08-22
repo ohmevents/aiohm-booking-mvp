@@ -35,7 +35,7 @@ class Settings {
 	 * @since 1.0.0
 	 * @return array Plugin settings array.
 	 */
-	public static function getAll() {
+	public static function get_all() {
 		if ( self::$cache_cleared || self::$cached_settings === null ) {
 			self::$cached_settings = get_option( 'aiohm_booking_mvp_settings', array() );
 			self::$cache_cleared   = false;
@@ -76,7 +76,7 @@ class Settings {
 	 * @since 1.0.0
 	 * @return void
 	 */
-	public static function clearCache() {
+	public static function clear_cache() {
 		if ( function_exists( 'wp_cache_delete' ) ) {
 			wp_cache_delete( 'aiohm_booking_mvp_settings', 'options' );
 		}

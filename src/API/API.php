@@ -126,7 +126,7 @@ class API {
 		try {
 			global $wpdb;
 			$p    = $r->get_json_params();
-			$opts = Config::getPrices();
+			$opts = Config::get_prices();
 
 			// Validate required fields
 			$name  = sanitize_text_field( $p['name'] ?? '' );
@@ -156,7 +156,7 @@ class API {
 
 			// Validate minimum age requirement (only if age field is enabled and minimum age is set)
 			$age               = intval( $p['age'] ?? 0 );
-			$settings          = Settings::getAll();
+			$settings          = Settings::get_all();
 			$age_field_enabled = ! empty( $settings['form_field_age'] );
 			$min_age           = intval( $settings['min_age'] ?? 0 );
 
@@ -165,7 +165,7 @@ class API {
 			}
 
 			// Validate mode settings
-			$rooms_enabled = Config::areRoomsEnabled();
+			$rooms_enabled = Config::are_rooms_enabled();
 			if ( ! $rooms_enabled ) {
 				return new \WP_Error( 'rooms_disabled', 'Accommodation booking is not enabled', array( 'status' => 400 ) );
 			}
@@ -176,8 +176,10 @@ class API {
 			}
 
 			// Calculate totals - rooms only now
-			$check_in_date  = sanitize_text_field( $p['check_in_date'] ?? ( $p['checkin_date'] ?? '' ) ) ?: null;
-			$check_out_date = sanitize_text_field( $p['check_out_date'] ?? ( $p['checkout_date'] ?? '' ) ) ?: null;
+			$check_in_temp  = sanitize_text_field( $p['check_in_date'] ?? ( $p['checkin_date'] ?? '' ) );
+			$check_in_date  = $check_in_temp ? $check_in_temp : null;
+			$check_out_temp = sanitize_text_field( $p['check_out_date'] ?? ( $p['checkout_date'] ?? '' ) );
+			$check_out_date = $check_out_temp ? $check_out_temp : null;
 
 			// Validate date formats
 			if ( ! $check_in_date || ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $check_in_date ) || ! strtotime( $check_in_date ) ) {
@@ -238,7 +240,7 @@ class API {
 								$blocked_info = $admin_blocked_dates[ $room_id ][ $date ];
 								$status       = is_array( $blocked_info ) ? ( $blocked_info['status'] ?? 'blocked' ) : 'blocked';
 
-								if ( in_array( $status, array( 'blocked', 'booked', 'pending', 'external' ) ) ) {
+								if ( in_array( $status, array( 'blocked', 'booked', 'pending', 'external' ), true ) ) {
 									return new \WP_Error(
 										'room_unavailable',
 										"Room $room_id is not available on $date.",
@@ -300,7 +302,7 @@ class API {
 								$blocked_info = $admin_blocked_dates[ $room_id ][ $date ];
 								$status       = is_array( $blocked_info ) ? ( $blocked_info['status'] ?? 'blocked' ) : 'blocked';
 
-								if ( in_array( $status, array( 'blocked', 'booked', 'pending', 'external' ) ) ) {
+								if ( in_array( $status, array( 'blocked', 'booked', 'pending', 'external' ), true ) ) {
 									++$blocked_rooms_count;
 								}
 							}
@@ -601,7 +603,9 @@ class API {
 		);
 
 		// Log successful payment verification
-		error_log( "AIOHM PayPal payment verified successfully: Order {$order_id}, PayPal ID {$paypal_order_id}" );
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			error_log( "AIOHM PayPal payment verified successfully: Order {$order_id}, PayPal ID {$paypal_order_id}" );
+		}
 
 		return rest_ensure_response(
 			array(
@@ -698,7 +702,7 @@ class API {
 				}
 				foreach ( $dates as $date_str => $details ) {
 					$status = is_array( $details ) ? ( $details['status'] ?? 'blocked' ) : 'blocked';
-					if ( in_array( $status, array( 'blocked', 'booked', 'pending', 'external' ) ) ) {
+					if ( in_array( $status, array( 'blocked', 'booked', 'pending', 'external' ), true ) ) {
 						try {
 							$current_date = new \DateTime( $date_str );
 							if ( $current_date >= $from_dt && $current_date <= $to_dt ) {
@@ -1003,7 +1007,7 @@ class API {
 	 */
 	public static function verify_public_nonce( $request ) {
 		// Check for nonce in header or request parameter
-		$nonce = $request->get_header( 'X-WP-Nonce' ) ?: $request->get_param( '_wpnonce' );
+		$nonce = $request->get_header( 'X-WP-Nonce' ) ? $request->get_header( 'X-WP-Nonce' ) : $request->get_param( '_wpnonce' );
 
 		if ( empty( $nonce ) ) {
 			return new \WP_Error( 'missing_nonce', 'Security nonce is required', array( 'status' => 403 ) );
@@ -1081,8 +1085,10 @@ class API {
 			return new \WP_Error( 'invalid_webhook', 'Invalid PayPal webhook payload', array( 'status' => 400 ) );
 		}
 
-		// Log webhook for debugging (remove in production)
-		error_log( 'AIOHM PayPal webhook received: ' . $event['event_type'] );
+		// Log webhook for debugging
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			error_log( 'AIOHM PayPal webhook received: ' . $event['event_type'] );
+		}
 
 		// Handle different PayPal webhook events
 		switch ( $event['event_type'] ) {
@@ -1096,7 +1102,9 @@ class API {
 
 			default:
 				// Log unknown event types but don't fail
-				error_log( 'AIOHM PayPal webhook: Unknown event type: ' . $event['event_type'] );
+				if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+					error_log( 'AIOHM PayPal webhook: Unknown event type: ' . $event['event_type'] );
+				}
 				return rest_ensure_response( array( 'status' => 'ignored' ) );
 		}
 	}
@@ -1114,14 +1122,18 @@ class API {
 		$payment_id = $resource['id'] ?? '';
 
 		if ( empty( $custom_id ) ) {
-			error_log( 'AIOHM PayPal webhook: No custom_id in payment completed event' );
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				error_log( 'AIOHM PayPal webhook: No custom_id in payment completed event' );
+			}
 			return rest_ensure_response( array( 'status' => 'ignored' ) );
 		}
 
 		// Custom ID should contain our order ID
 		$order_id = absint( $custom_id );
 		if ( ! $order_id ) {
-			error_log( 'AIOHM PayPal webhook: Invalid order ID in custom_id: ' . $custom_id );
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				error_log( 'AIOHM PayPal webhook: Invalid order ID in custom_id: ' . $custom_id );
+			}
 			return rest_ensure_response( array( 'status' => 'error' ) );
 		}
 
@@ -1141,10 +1153,14 @@ class API {
 		);
 
 		if ( $updated ) {
-			error_log( "AIOHM PayPal webhook: Successfully updated order {$order_id} to paid status" );
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				error_log( "AIOHM PayPal webhook: Successfully updated order {$order_id} to paid status" );
+			}
 			return rest_ensure_response( array( 'status' => 'processed' ) );
 		} else {
-			error_log( "AIOHM PayPal webhook: Failed to update order {$order_id}" );
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				error_log( "AIOHM PayPal webhook: Failed to update order {$order_id}" );
+			}
 			return rest_ensure_response( array( 'status' => 'error' ) );
 		}
 	}
@@ -1181,7 +1197,9 @@ class API {
 			array( '%d' )
 		);
 
-		error_log( "AIOHM PayPal webhook: Updated order {$order_id} to failed status" );
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			error_log( "AIOHM PayPal webhook: Updated order {$order_id} to failed status" );
+		}
 		return rest_ensure_response( array( 'status' => 'processed' ) );
 	}
 
@@ -1206,7 +1224,9 @@ class API {
 		// Check if all required PayPal headers are present
 		foreach ( $required_headers as $header ) {
 			if ( empty( $headers[ $header ] ) ) {
-				error_log( "AIOHM PayPal webhook: Missing required header: {$header}" );
+				if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+					error_log( "AIOHM PayPal webhook: Missing required header: {$header}" );
+				}
 				return false;
 			}
 		}

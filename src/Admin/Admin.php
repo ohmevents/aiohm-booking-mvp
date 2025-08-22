@@ -50,7 +50,7 @@ class Admin {
 		add_submenu_page( 'aiohm-booking-mvp', 'Settings', 'Settings', 'manage_options', 'aiohm-booking-mvp-settings', array( __CLASS__, 'settings' ) );
 
 		// Get settings to determine which menu items to show
-		$settings = Settings::getAll();
+		$settings = Settings::get_all();
 
 		// Default to enabled if settings are missing (initial setup)
 		$rooms_enabled         = ! empty( $settings['enable_rooms'] ) || empty( $settings );
@@ -118,7 +118,7 @@ class Admin {
 	 * Sends a JSON error and dies if consent is not granted.
 	 */
 	private static function check_ai_consent() {
-		$settings       = Settings::getAll();
+		$settings       = Settings::get_all();
 		$global_consent = ! empty( $settings['ai_api_consent'] );
 
 		if ( ! $global_consent ) {
@@ -144,7 +144,7 @@ class Admin {
 		}
 
 		self::check_ai_consent();
-		$settings = Settings::getAll();
+		$settings = Settings::get_all();
 		$provider = $settings['default_ai_provider'] ?? 'shareai';
 		$ai       = new \AIOHM\BookingMVP\AI\Client();
 
@@ -191,7 +191,7 @@ class Admin {
 		}
 
 		self::check_ai_consent();
-		$settings = Settings::getAll();
+		$settings = Settings::get_all();
 		$provider = $settings['default_ai_provider'] ?? 'shareai';
 		$ai       = new \AIOHM\BookingMVP\AI\Client();
 
@@ -290,7 +290,7 @@ class Admin {
 
 		$stats['orders'] = array(
 			'rows'        => intval( $order_count ),
-			'sample_data' => $recent_statuses ?: array(),
+			'sample_data' => $recent_statuses ? $recent_statuses : array(),
 		);
 
 		// Order items stats
@@ -300,7 +300,7 @@ class Admin {
 
 		$stats['order_items'] = array(
 			'rows'        => intval( $item_count ),
-			'sample_data' => $recent_types ?: array(),
+			'sample_data' => $recent_types ? $recent_types : array(),
 		);
 
 		return $stats;
@@ -321,7 +321,7 @@ class Admin {
 		}
 
 		self::check_ai_consent();
-		$settings = Settings::getAll();
+		$settings = Settings::get_all();
 		$provider = $settings['default_ai_provider'] ?? 'shareai';
 		$ai       = new \AIOHM\BookingMVP\AI\Client();
 
@@ -526,7 +526,7 @@ class Admin {
 
 		$consent = ! empty( $_POST['consent'] );
 
-		$settings                   = Settings::getAll();
+		$settings                   = Settings::get_all();
 		$settings['ai_api_consent'] = $consent ? '1' : '0';
 
 		Settings::update( $settings );
@@ -623,7 +623,7 @@ class Admin {
 		}
 
 		// Get current settings
-		$settings = Settings::getAll();
+		$settings = Settings::get_all();
 
 		$key_name              = $provider . '_api_key';
 		$settings[ $key_name ] = $api_key;
@@ -656,11 +656,11 @@ class Admin {
 		$provider        = sanitize_text_field( wp_unslash( $_POST['provider'] ?? '' ) );
 		$valid_providers = array( 'shareai', 'openai', 'gemini' );
 
-		if ( empty( $provider ) || ! in_array( $provider, $valid_providers ) ) {
+		if ( empty( $provider ) || ! in_array( $provider, $valid_providers, true ) ) {
 			wp_send_json_error( 'Invalid provider' );
 		}
 
-		$settings                        = Settings::getAll();
+		$settings                        = Settings::get_all();
 		$settings['default_ai_provider'] = $provider;
 
 		$result = Settings::update( $settings );
@@ -702,7 +702,7 @@ class Admin {
 		$accommodation_details = get_option( 'aiohm_booking_mvp_accommodations_details', array() );
 
 		// Determine default title if empty
-		$names            = Config::getProductNames();
+		$names            = Config::get_product_names();
 		$default_singular = $names['singular_cap'] ?? 'Accommodation';
 		$incoming_title   = trim( (string) ( $accommodation_data['title'] ?? '' ) );
 		if ( $incoming_title === '' ) {
@@ -753,7 +753,7 @@ class Admin {
 	private static function get_menu_icon() {
 		// Detect admin color scheme for dynamic theming
 		$admin_color   = get_user_option( 'admin_color' );
-		$is_dark_theme = in_array( $admin_color, array( 'midnight', 'blue', 'coffee', 'ectoplasm', 'ocean' ) );
+		$is_dark_theme = in_array( $admin_color, array( 'midnight', 'blue', 'coffee', 'ectoplasm', 'ocean' ), true );
 		// Use the OHM logo SVG files
 		$logo_path = $is_dark_theme
 			? Assets::get_path( 'images/aiohm-booking-OHM_logo-white.svg' )
@@ -774,13 +774,14 @@ class Admin {
 		// Get some basic stats
 		$table = $wpdb->prefix . 'aiohm_booking_mvp_order';
 		// Safe SQL: Table names are sanitized via wpdb->prefix concatenation, user input is prepared
-		$total_orders   = $wpdb->get_var( "SELECT COUNT(*) FROM {$table}" );
-		$pending_orders = $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE status = %s", 'pending' ) );
-		$paid_orders    = $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE status = %s", 'paid' ) );
-		$total_revenue  = $wpdb->get_var( $wpdb->prepare( "SELECT SUM(total_amount) FROM {$table} WHERE status = %s", 'paid' ) ) ?: 0;
+		$total_orders       = $wpdb->get_var( "SELECT COUNT(*) FROM {$table}" );
+		$pending_orders     = $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE status = %s", 'pending' ) );
+		$paid_orders        = $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE status = %s", 'paid' ) );
+		$total_revenue_temp = $wpdb->get_var( $wpdb->prepare( "SELECT SUM(total_amount) FROM {$table} WHERE status = %s", 'paid' ) );
+		$total_revenue      = $total_revenue_temp ? $total_revenue_temp : 0;
 
 		// Get currency setting for revenue display
-		$settings = Settings::getAll();
+		$settings = Settings::get_all();
 		$currency = $settings['currency'] ?? 'EUR';
 
 		?>
@@ -1219,7 +1220,7 @@ class Admin {
 									<?php echo esc_html( ucfirst( $order->status ) ); ?>
 								</span>
 							</td>
-							<td><?php echo esc_html( $order->payment_method ?: '-' ); ?></td>
+							<td><?php echo esc_html( $order->payment_method ? $order->payment_method : '-' ); ?></td>
 							<td>
 								<?php if ( $order->status === 'pending' ) : ?>
 									<a href="?page=aiohm-booking-mvp-orders&action=mark_paid&order_id=<?php echo (int) $order->id; ?>">Mark Paid</a> |
@@ -1235,7 +1236,7 @@ class Admin {
 
 			<!-- AI Order Insights Section -->
 			<?php
-			$settings   = Settings::getAll();
+			$settings   = Settings::get_all();
 			$ai_enabled = ! empty( $settings['enable_shareai'] ) || ! empty( $settings['enable_openai'] ) || ! empty( $settings['enable_gemini'] );
 
 			if ( $ai_enabled ) {
@@ -1929,7 +1930,7 @@ class Admin {
 		$allow_private   = ! empty( $o['allow_private_all'] );
 
 		// Get dynamic product names
-		$product_names = Config::getProductNames();
+		$product_names = Config::get_product_names();
 		$singular      = $product_names['singular_cap'];
 		$plural        = $product_names['plural_cap'];
 
@@ -3321,7 +3322,7 @@ Use merge tags to personalize the email content."></textarea>
 	 */
 	private static function renderAIOrderInsights() {
 		// Get default AI provider and map to display name
-		$settings         = Settings::getAll();
+		$settings         = Settings::get_all();
 		$default_provider = $settings['default_ai_provider'] ?? 'shareai';
 
 		$provider_names = array(

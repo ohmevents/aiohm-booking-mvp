@@ -17,7 +17,7 @@ $wp_version = get_bloginfo('version');
 $php_version = PHP_VERSION;
 
 // Get plugin settings for debugging
-$settings = \AIOHM\BookingMVP\Core\Settings::getAll();
+$settings = \AIOHM\BookingMVP\Core\Settings::get_all();
 $enabled_modules = [];
 if (!empty($settings['enable_rooms'])) $enabled_modules[] = 'Rooms';
 $enabled_modules_str = !empty($enabled_modules) ? implode(', ', $enabled_modules) : 'None';
