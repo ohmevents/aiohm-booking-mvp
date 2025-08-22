@@ -93,8 +93,10 @@ class API {
      * @return \WP_REST_Response|\WP_Error Order details on success, error on failure
      */
     public static function hold( \WP_REST_Request $r ){
+        global $wpdb;
+        $wpdb->query('START TRANSACTION');
+
         try {
-            global $wpdb;
             $p = $r->get_json_params();
             $opts = Config::getPrices();
 
@@ -102,6 +104,7 @@ class API {
         $name = sanitize_text_field($p['name'] ?? '');
         $email = sanitize_email($p['email'] ?? '');
         if(empty($name) || empty($email)){
+            $wpdb->query('ROLLBACK');
             return new \WP_Error('missing_fields', 'Name and email are required', ['status' => 400]);
         }
 
@@ -130,17 +133,20 @@ class API {
         $min_age = intval($settings['min_age'] ?? 0);
         
         if ($age_field_enabled && $min_age > 0 && $age < $min_age) {
+            $wpdb->query('ROLLBACK');
             return new \WP_Error('age_requirement', "Minimum age requirement is {$min_age} years", ['status' => 400]);
         }
 
         // Validate mode settings
         $rooms_enabled = Config::areRoomsEnabled();
         if (!$rooms_enabled) {
+            $wpdb->query('ROLLBACK');
             return new \WP_Error('rooms_disabled', 'Accommodation booking is not enabled', ['status' => 400]);
         }
 
         // Validate quantities
         if ($rooms_qty <= 0 && !$private_all) {
+            $wpdb->query('ROLLBACK');
             return new \WP_Error('invalid_rooms', 'At least one accommodation must be selected', ['status' => 400]);
         }
 
@@ -150,14 +156,17 @@ class API {
 
         // Validate date formats
         if (!$check_in_date || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $check_in_date) || !strtotime($check_in_date)) {
+            $wpdb->query('ROLLBACK');
             return new \WP_Error('invalid_checkin', 'Invalid check-in date format. Expected YYYY-MM-DD', ['status' => 400]);
         }
         if (!$check_out_date || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $check_out_date) || !strtotime($check_out_date)) {
+            $wpdb->query('ROLLBACK');
             return new \WP_Error('invalid_checkout', 'Invalid check-out date format. Expected YYYY-MM-DD', ['status' => 400]);
         }
 
         // Validate date logic
         if (strtotime($check_in_date) >= strtotime($check_out_date)) {
+            $wpdb->query('ROLLBACK');
             return new \WP_Error('invalid_date_range', 'Check-out date must be after check-in date', ['status' => 400]);
         }
 
@@ -183,6 +192,7 @@ class API {
 
         // If booking includes private-only event days, force private_all booking
         if ($has_private_only_days && !$private_all) {
+            $wpdb->query('ROLLBACK');
             return new \WP_Error(
                 'private_event_only', 
                 'This date is reserved for private events. Only full property bookings are available for ' . $private_event_info['name'] . '.', 
@@ -204,6 +214,7 @@ class API {
                             $status = is_array($blocked_info) ? ($blocked_info['status'] ?? 'blocked') : 'blocked';
                             
                             if (in_array($status, ['blocked', 'booked', 'pending', 'external'])) {
+                                $wpdb->query('ROLLBACK');
                                 return new \WP_Error(
                                     'room_unavailable',
                                     "Room $room_id is not available on $date.",
@@ -218,10 +229,10 @@ class API {
                 global $wpdb;
                 $order_table = $wpdb->prefix . 'aiohm_booking_mvp_order';
                 
-                // Get existing bookings for the date range
+                // Get existing bookings for the date range and lock the rows for update
                 // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
                 $existing_bookings = $wpdb->get_results($wpdb->prepare(
-                    "SELECT check_in_date, check_out_date, private_all, rooms_qty FROM {$order_table} WHERE status IN ('paid', 'pending') AND check_in_date <= %s AND check_out_date > %s",
+                    "SELECT check_in_date, check_out_date, private_all, rooms_qty FROM {$order_table} WHERE status IN ('paid', 'pending') AND check_in_date <= %s AND check_out_date > %s FOR UPDATE",
                     $check_out_date,
                     $check_in_date
                 ));
@@ -269,6 +280,7 @@ class API {
                     $available_rooms = $total_rooms - $blocked_rooms_count - $booked_rooms_count;
                     
                     if ($available_rooms < $rooms_qty) {
+                        $wpdb->query('ROLLBACK');
                         return new \WP_Error(
                             'insufficient_rooms',
                             "Only $available_rooms rooms are available on $date, but $rooms_qty rooms were requested.",
@@ -282,6 +294,7 @@ class API {
         $total = self::calculate_accommodation_total($room_ids, $rooms_qty, $private_all, $opts, $check_in_date, $check_out_date, $private_event_info);
 
         if($total <= 0){
+            $wpdb->query('ROLLBACK');
             return new \WP_Error('invalid_total', 'Order total must be greater than 0', ['status' => 400]);
         }
 
@@ -311,6 +324,7 @@ class API {
         
         // Check for database errors
         if ($insert_result === false) {
+            $wpdb->query('ROLLBACK');
             return new \WP_Error('database_error', 'Unable to create booking. Please try again.', ['status' => 500]);
         }
         
@@ -318,6 +332,7 @@ class API {
         
         // Validate order was created successfully
         if (!$order_id) {
+            $wpdb->query('ROLLBACK');
             return new \WP_Error('database_error', 'Unable to create booking. Please try again.', ['status' => 500]);
         }
 
@@ -345,6 +360,8 @@ class API {
             'age' => $age,
         ]);
 
+        $wpdb->query('COMMIT');
+
         return rest_ensure_response([
             'order_id'=>$order_id,
             'buyer_email'=>$email,
@@ -354,6 +371,7 @@ class API {
         ]);
         
         } catch (\Exception $e) {
+            $wpdb->query('ROLLBACK');
             return new \WP_Error('server_error', 'A server error occurred. Please try again.', ['status' => 500]);
         }
     }
